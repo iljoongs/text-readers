@@ -49,6 +49,11 @@ public partial class ReaderViewModel : ObservableObject
     [ObservableProperty]
     private double _dimmingOpacity;
 
+    [ObservableProperty]
+    private string _searchQuery = string.Empty;
+
+    private int _lastSearchParagraphIndex = -1;
+
     public event Action<int>? NavigateToPageRequested;
 
     public event Action<Paragraph>? NavigateToParagraphRequested;
@@ -132,6 +137,8 @@ public partial class ReaderViewModel : ObservableObject
             Bookmarks.Add(bookmark);
         }
 
+        _lastSearchParagraphIndex = -1;
+
         var savedPageIndex = _libraryService.GetLastPageIndex(book.FilePath);
         _libraryService.UpdatePosition(book.FilePath, savedPageIndex);
 
@@ -174,6 +181,38 @@ public partial class ReaderViewModel : ObservableObject
 
     [RelayCommand]
     private void GoToTocEntry(TocEntry entry) => NavigateToParagraphRequested?.Invoke(entry.Paragraph);
+
+    [RelayCommand]
+    private void FindNext()
+    {
+        if (Document is null || string.IsNullOrWhiteSpace(SearchQuery))
+        {
+            return;
+        }
+
+        var paragraphs = Document.Blocks.OfType<Paragraph>().ToList();
+        if (paragraphs.Count == 0)
+        {
+            return;
+        }
+
+        for (var offset = 1; offset <= paragraphs.Count; offset++)
+        {
+            var index = (_lastSearchParagraphIndex + offset) % paragraphs.Count;
+            var text = new TextRange(paragraphs[index].ContentStart, paragraphs[index].ContentEnd).Text;
+            if (text.Contains(SearchQuery, StringComparison.OrdinalIgnoreCase))
+            {
+                _lastSearchParagraphIndex = index;
+                NavigateToParagraphRequested?.Invoke(paragraphs[index]);
+                return;
+            }
+        }
+
+        MessageBox.Show($"'{SearchQuery}'를 찾을 수 없습니다.", "text-readers",
+            MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    partial void OnSearchQueryChanged(string value) => _lastSearchParagraphIndex = -1;
 
     partial void OnCurrentPageNumberChanged(int value)
     {

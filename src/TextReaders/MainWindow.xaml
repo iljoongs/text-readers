@@ -81,6 +81,14 @@
                     </ListBox>
                 </Border>
             </Popup>
+
+            <Separator />
+            <TextBox Width="140" VerticalAlignment="Center" Text="{Binding SearchQuery, UpdateSourceTrigger=PropertyChanged}">
+                <TextBox.InputBindings>
+                    <KeyBinding Key="Enter" Command="{Binding FindNextCommand}" />
+                </TextBox.InputBindings>
+            </TextBox>
+            <Button Content="찾기" Command="{Binding FindNextCommand}" Padding="8,2" />
         </ToolBar>
 
         <Grid>
