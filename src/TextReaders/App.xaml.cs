@@ -12,8 +12,9 @@ public partial class App : Application
 
         IEncodingDetectionService encodingDetectionService = new EncodingDetectionService();
         IFileService fileService = new FileService(encodingDetectionService);
+        ISettingsService settingsService = new SettingsService();
 
-        var readerViewModel = new ReaderViewModel(fileService);
+        var readerViewModel = new ReaderViewModel(fileService, settingsService);
 
         var mainWindow = new MainWindow
         {

@@ -13,6 +13,26 @@
     <DockPanel>
         <ToolBar DockPanel.Dock="Top">
             <Button Content="파일 열기" Command="{Binding OpenFileCommand}" Padding="8,2" />
+            <Separator />
+
+            <TextBlock Text="글꼴" VerticalAlignment="Center" Margin="4,0" />
+            <ComboBox Width="150" ItemsSource="{Binding AvailableFontFamilyNames}" SelectedItem="{Binding FontFamilyName}" />
+
+            <Separator />
+            <TextBlock Text="크기" VerticalAlignment="Center" Margin="4,0" />
+            <Slider Width="90" Minimum="12" Maximum="32" Value="{Binding FontSize}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding FontSize, StringFormat={}{0:0}pt}" VerticalAlignment="Center" Width="34" />
+
+            <Separator />
+            <TextBlock Text="줄간격" VerticalAlignment="Center" Margin="4,0" />
+            <Slider Width="90" Minimum="1.0" Maximum="2.0" Value="{Binding LineSpacingMultiplier}" VerticalAlignment="Center" />
+            <TextBlock Text="{Binding LineSpacingMultiplier, StringFormat={}{0:0.0}x}" VerticalAlignment="Center" Width="34" />
+
+            <Separator />
+            <TextBlock Text="여백" VerticalAlignment="Center" Margin="4,0" />
+            <ComboBox Width="80" ItemsSource="{Binding MarginPresetOptions}" SelectedItem="{Binding MarginPreset}" />
+
+            <Separator />
             <TextBlock Text="{Binding CurrentBook.Title}" VerticalAlignment="Center" Margin="12,0" />
         </ToolBar>
 

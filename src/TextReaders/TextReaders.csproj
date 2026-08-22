@@ -15,4 +15,9 @@
     <PackageReference Include="UTF.Unknown" Version="2.7.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Resource Include="Assets\Fonts\*.ttf" />
+    <Resource Include="Assets\Fonts\*.otf" />
+  </ItemGroup>
+
 </Project>
