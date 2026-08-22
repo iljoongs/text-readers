@@ -9,4 +9,10 @@
     <ApplicationIcon>Assets\text-readers.ico</ApplicationIcon>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
+    <PackageReference Include="System.Text.Encoding.CodePages" Version="10.0.11" />
+    <PackageReference Include="UTF.Unknown" Version="2.7.0" />
+  </ItemGroup>
+
 </Project>

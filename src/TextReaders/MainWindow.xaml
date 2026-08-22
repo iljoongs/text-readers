@@ -5,8 +5,13 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TextReaders"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
-    <Grid>
+        Title="text-readers" Height="720" Width="1080">
+    <DockPanel>
+        <ToolBar DockPanel.Dock="Top">
+            <Button Content="파일 열기" Command="{Binding OpenFileCommand}" Padding="8,2" />
+            <TextBlock Text="{Binding CurrentBook.Title}" VerticalAlignment="Center" Margin="12,0" />
+        </ToolBar>
 
-    </Grid>
+        <FlowDocumentPageViewer Document="{Binding Document}" />
+    </DockPanel>
 </Window>

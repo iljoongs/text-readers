@@ -44,20 +44,19 @@ text-readers/
 
 ### 인코딩 자동 감지: `UTF.Unknown`
 
-- NuGet 패키지명: `UTF.Unknown`
+- NuGet 패키지명: `UTF.Unknown` (v2.7.0 기준, DLL/네임스페이스명은 `UtfUnknown`)
 - 사용 목적: `.txt` 파일 로드 시 UTF-8/EUC-KR 등 인코딩을 자동 판별
-- 기본 사용 패턴:
+- 기본 사용 패턴 (`Services/EncodingDetectionService.cs` 참고):
 
 ```csharp
-using Ude;
+using UtfUnknown;
 
-var detector = new CharsetDetector();
-detector.Feed(fileBytes, 0, fileBytes.Length);
-detector.DataEnd();
-string? detectedEncoding = detector.Charset; // 예: "UTF-8", "EUC-KR"
+var result = CharsetDetector.DetectFromBytes(fileBytes);
+Encoding encoding = result.Detected?.Encoding ?? Encoding.UTF8;
 ```
 
-- 감지 실패 시 UTF-8을 기본값으로 fallback 처리한다.
+- EUC-KR 등 레거시 코드페이지를 `Encoding.GetEncoding`/`.Encoding` 프로퍼티로 정상 인식하려면 `System.Text.Encoding.CodePages` 패키지를 추가하고 앱 시작 시 `Encoding.RegisterProvider(CodePagesEncodingProvider.Instance)`를 한 번 호출해야 한다 (.NET Core/5+는 기본적으로 레거시 코드페이지를 포함하지 않음).
+- 감지 실패(`Detected`가 `null`) 시 UTF-8을 기본값으로 fallback 처리한다.
 
 ### 데이터 저장: JSON
 
