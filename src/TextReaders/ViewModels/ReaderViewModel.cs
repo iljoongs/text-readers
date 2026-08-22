@@ -28,6 +28,9 @@ public partial class ReaderViewModel : ObservableObject
     private int _currentPageNumber = 1;
 
     [ObservableProperty]
+    private int _pageCount = 1;
+
+    [ObservableProperty]
     private string _fontFamilyName;
 
     [ObservableProperty]
@@ -54,6 +57,10 @@ public partial class ReaderViewModel : ObservableObject
     public IReadOnlyList<ReadingTheme> ThemeOptions { get; } = Enum.GetValues<ReadingTheme>();
 
     public Brush PageBackgroundBrush => GetPageBackgroundBrush();
+
+    public string ReadingProgressText => PageCount > 0
+        ? $"{CurrentPageNumber} / {PageCount} ({(int)Math.Round(CurrentPageNumber * 100.0 / PageCount)}%)"
+        : string.Empty;
 
     public ReaderViewModel(IFileService fileService, ISettingsService settingsService, ILibraryService libraryService)
     {
@@ -119,9 +126,12 @@ public partial class ReaderViewModel : ObservableObject
 
     partial void OnCurrentPageNumberChanged(int value)
     {
+        OnPropertyChanged(nameof(ReadingProgressText));
         _positionSaveTimer.Stop();
         _positionSaveTimer.Start();
     }
+
+    partial void OnPageCountChanged(int value) => OnPropertyChanged(nameof(ReadingProgressText));
 
     partial void OnFontFamilyNameChanged(string value) => OnFormattingChanged();
 

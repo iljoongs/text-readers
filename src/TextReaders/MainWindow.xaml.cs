@@ -21,7 +21,7 @@ public partial class MainWindow : Window
 
         PreviewKeyDown += Window_PreviewKeyDown;
 
-        // MasterPageNumber는 Binding으로 관찰할 수 없게 막혀 있는 DP라(런타임에 ArgumentException),
+        // MasterPageNumber/PageCount는 Binding으로 관찰할 수 없게 막혀 있는 DP라(런타임에 ArgumentException),
         // DependencyPropertyDescriptor로 값 변경을 관찰해 ViewModel에 직접 반영한다.
         DependencyPropertyDescriptor
             .FromProperty(FlowDocumentPageViewer.MasterPageNumberProperty, typeof(FlowDocumentPageViewer))
@@ -30,6 +30,16 @@ public partial class MainWindow : Window
                 if (DataContext is ReaderViewModel viewModel)
                 {
                     viewModel.CurrentPageNumber = PageViewer.MasterPageNumber;
+                }
+            });
+
+        DependencyPropertyDescriptor
+            .FromProperty(FlowDocumentPageViewer.PageCountProperty, typeof(FlowDocumentPageViewer))
+            ?.AddValueChanged(PageViewer, (_, _) =>
+            {
+                if (DataContext is ReaderViewModel viewModel)
+                {
+                    viewModel.PageCount = PageViewer.PageCount;
                 }
             });
 
