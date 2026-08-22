@@ -6,12 +6,23 @@
         xmlns:local="clr-namespace:TextReaders"
         mc:Ignorable="d"
         Title="text-readers" Height="720" Width="1080">
+    <Window.InputBindings>
+        <KeyBinding Key="Left" Command="NavigationCommands.PreviousPage" CommandTarget="{Binding ElementName=PageViewer}" />
+        <KeyBinding Key="Right" Command="NavigationCommands.NextPage" CommandTarget="{Binding ElementName=PageViewer}" />
+    </Window.InputBindings>
     <DockPanel>
         <ToolBar DockPanel.Dock="Top">
             <Button Content="파일 열기" Command="{Binding OpenFileCommand}" Padding="8,2" />
             <TextBlock Text="{Binding CurrentBook.Title}" VerticalAlignment="Center" Margin="12,0" />
         </ToolBar>
 
-        <FlowDocumentPageViewer Document="{Binding Document}" />
+        <Grid>
+            <FlowDocumentPageViewer x:Name="PageViewer" Document="{Binding Document}" />
+
+            <Border Width="64" HorizontalAlignment="Left" Background="Transparent" Cursor="Hand"
+                    MouseLeftButtonDown="PreviousPageZone_MouseLeftButtonDown" />
+            <Border Width="64" HorizontalAlignment="Right" Background="Transparent" Cursor="Hand"
+                    MouseLeftButtonDown="NextPageZone_MouseLeftButtonDown" />
+        </Grid>
     </DockPanel>
 </Window>
