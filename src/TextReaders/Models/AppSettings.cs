@@ -9,4 +9,6 @@ public sealed class AppSettings
     public double LineSpacingMultiplier { get; set; } = 1.0;
 
     public MarginPreset MarginPreset { get; set; } = MarginPreset.Normal;
+
+    public WindowGeometry? Window { get; set; }
 }

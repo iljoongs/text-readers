@@ -121,13 +121,14 @@ public partial class ReaderViewModel : ObservableObject
     private void OnFormattingChanged()
     {
         ApplyDocumentFormatting();
-        _settingsService.Save(new AppSettings
-        {
-            FontFamilyName = FontFamilyName,
-            FontSize = FontSize,
-            LineSpacingMultiplier = LineSpacingMultiplier,
-            MarginPreset = MarginPreset,
-        });
+
+        // 창 크기/위치 등 이 ViewModel이 모르는 다른 설정 필드를 덮어쓰지 않도록 읽고-수정하고-저장한다.
+        var settings = _settingsService.Load();
+        settings.FontFamilyName = FontFamilyName;
+        settings.FontSize = FontSize;
+        settings.LineSpacingMultiplier = LineSpacingMultiplier;
+        settings.MarginPreset = MarginPreset;
+        _settingsService.Save(settings);
     }
 
     private void ApplyDocumentFormatting()
