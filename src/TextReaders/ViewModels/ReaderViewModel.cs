@@ -51,6 +51,8 @@ public partial class ReaderViewModel : ObservableObject
 
     public event Action<int>? NavigateToPageRequested;
 
+    public event Action<Paragraph>? NavigateToParagraphRequested;
+
     public IReadOnlyList<string> AvailableFontFamilyNames => FontCatalog.AvailableFontFamilyNames;
 
     public IReadOnlyList<MarginPreset> MarginPresetOptions { get; } = Enum.GetValues<MarginPreset>();
@@ -64,6 +66,8 @@ public partial class ReaderViewModel : ObservableObject
         : string.Empty;
 
     public ObservableCollection<Bookmark> Bookmarks { get; } = new();
+
+    public ObservableCollection<TocEntry> TableOfContents { get; } = new();
 
     public ReaderViewModel(IFileService fileService, ISettingsService settingsService, ILibraryService libraryService)
     {
@@ -112,8 +116,15 @@ public partial class ReaderViewModel : ObservableObject
     public void LoadBook(Book book)
     {
         CurrentBook = book;
-        Document = BuildFlowDocument(book.Content);
+        var (document, tocEntries) = BuildFlowDocument(book.Content);
+        Document = document;
         ApplyDocumentFormatting();
+
+        TableOfContents.Clear();
+        foreach (var entry in tocEntries)
+        {
+            TableOfContents.Add(entry);
+        }
 
         Bookmarks.Clear();
         foreach (var bookmark in _libraryService.GetBookmarks(book.FilePath))
@@ -160,6 +171,9 @@ public partial class ReaderViewModel : ObservableObject
         _libraryService.RemoveBookmark(CurrentBook.FilePath, bookmark);
         Bookmarks.Remove(bookmark);
     }
+
+    [RelayCommand]
+    private void GoToTocEntry(TocEntry entry) => NavigateToParagraphRequested?.Invoke(entry.Paragraph);
 
     partial void OnCurrentPageNumberChanged(int value)
     {
@@ -257,9 +271,12 @@ public partial class ReaderViewModel : ObservableObject
         };
     }
 
-    private static FlowDocument BuildFlowDocument(string content)
+    private static readonly Regex ChapterHeadingRegex = new(@"^(제\s*\d+\s*장|Chapter\s+\d+)", RegexOptions.IgnoreCase);
+
+    private static (FlowDocument Document, List<TocEntry> TocEntries) BuildFlowDocument(string content)
     {
         var document = new FlowDocument();
+        var tocEntries = new List<TocEntry>();
 
         var paragraphBlocks = Regex.Split(content, @"\r?\n\s*\r?\n");
         foreach (var block in paragraphBlocks)
@@ -270,9 +287,16 @@ public partial class ReaderViewModel : ObservableObject
                 continue;
             }
 
-            document.Blocks.Add(new Paragraph(new Run(normalized)));
+            var paragraph = new Paragraph(new Run(normalized));
+            document.Blocks.Add(paragraph);
+
+            if (ChapterHeadingRegex.IsMatch(normalized))
+            {
+                var title = normalized.Length > 40 ? normalized[..40] + "…" : normalized;
+                tocEntries.Add(new TocEntry(title, paragraph));
+            }
         }
 
-        return document;
+        return (document, tocEntries);
     }
 }

@@ -62,6 +62,25 @@
                     </ListBox>
                 </Border>
             </Popup>
+
+            <Separator />
+            <ToggleButton x:Name="TocListToggle" Content="목차 ▾" Padding="8,2" />
+            <Popup PlacementTarget="{Binding ElementName=TocListToggle}"
+                   IsOpen="{Binding IsChecked, ElementName=TocListToggle}"
+                   StaysOpen="True" Placement="Bottom">
+                <Border Background="White" BorderBrush="Gray" BorderThickness="1" Padding="4" MinWidth="220" MaxHeight="300">
+                    <ListBox ItemsSource="{Binding TableOfContents}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="2">
+                                    <TextBlock Text="{Binding Title}" Width="180" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" />
+                                    <Button Content="이동" Padding="4,0" Margin="4,0,0,0" Click="GoToTocEntryButton_Click" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Border>
+            </Popup>
         </ToolBar>
 
         <Grid>

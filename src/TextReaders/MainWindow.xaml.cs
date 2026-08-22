@@ -2,6 +2,7 @@ using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Controls.Primitives;
+using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
@@ -54,6 +55,18 @@ public partial class MainWindow : Window
                 // 세션 복원 시 위치 이동은 애니메이션 없이 즉시 이동한다.
                 viewModel.NavigateToPageRequested += pageNumber =>
                     NavigationCommands.GoToPage.Execute(pageNumber, PageViewer);
+
+                // 목차/검색처럼 "본문 어딘가"로 이동할 때는 그 문단이 몇 페이지에 있는지
+                // 페이지네이터에게 물어본 뒤 이동한다. GetPageNumber는 0-base라 +1 보정한다.
+                viewModel.NavigateToParagraphRequested += paragraph =>
+                {
+                    if (PageViewer.Document is IDocumentPaginatorSource source &&
+                        source.DocumentPaginator is DynamicDocumentPaginator paginator)
+                    {
+                        var pageNumber = paginator.GetPageNumber(paragraph.ContentStart) + 1;
+                        NavigationCommands.GoToPage.Execute(pageNumber, PageViewer);
+                    }
+                };
             }
         };
     }
@@ -93,6 +106,15 @@ public partial class MainWindow : Window
         if (DataContext is ReaderViewModel viewModel && ((FrameworkElement)sender).DataContext is Bookmark bookmark)
         {
             viewModel.RemoveBookmarkCommand.Execute(bookmark);
+        }
+    }
+
+    private void GoToTocEntryButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is ReaderViewModel viewModel && ((FrameworkElement)sender).DataContext is TocEntry entry)
+        {
+            viewModel.GoToTocEntryCommand.Execute(entry);
+            TocListToggle.IsChecked = false;
         }
     }
 
