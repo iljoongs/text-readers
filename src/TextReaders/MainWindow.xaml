@@ -41,6 +41,29 @@
             <TextBlock Text="{Binding ReadingProgressText}" VerticalAlignment="Center" Margin="8,0" />
         </ToolBar>
 
+        <ToolBar DockPanel.Dock="Top">
+            <Button Content="북마크 추가" Command="{Binding AddBookmarkCommand}" Padding="8,2" />
+            <ToggleButton x:Name="BookmarkListToggle" Content="북마크 목록 ▾" Padding="8,2" />
+            <Popup PlacementTarget="{Binding ElementName=BookmarkListToggle}"
+                   IsOpen="{Binding IsChecked, ElementName=BookmarkListToggle}"
+                   StaysOpen="True" Placement="Bottom">
+                <Border Background="White" BorderBrush="Gray" BorderThickness="1" Padding="4" MinWidth="220" MaxHeight="300">
+                    <ListBox ItemsSource="{Binding Bookmarks}">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal" Margin="2">
+                                    <TextBlock Text="{Binding PageNumber, StringFormat={}{0}페이지}" Width="90" VerticalAlignment="Center" />
+                                    <TextBlock Text="{Binding CreatedAt, StringFormat={}{0:MM/dd HH:mm}}" Width="80" VerticalAlignment="Center" Foreground="Gray" />
+                                    <Button Content="이동" Padding="4,0" Margin="4,0,0,0" Click="GoToBookmarkButton_Click" />
+                                    <Button Content="삭제" Padding="4,0" Margin="4,0,0,0" Click="RemoveBookmarkButton_Click" />
+                                </StackPanel>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Border>
+            </Popup>
+        </ToolBar>
+
         <Grid>
             <FlowDocumentPageViewer x:Name="PageViewer" Document="{Binding Document}"
                                      Background="{Binding PageBackgroundBrush}" />

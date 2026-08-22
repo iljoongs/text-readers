@@ -1,10 +1,12 @@
 using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Controls.Primitives;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using TextReaders.Models;
 using TextReaders.ViewModels;
 
 namespace TextReaders;
@@ -76,6 +78,23 @@ public partial class MainWindow : Window
     private void PreviousPageZone_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => GoToAdjacentPage(forward: false);
 
     private void NextPageZone_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => GoToAdjacentPage(forward: true);
+
+    private void GoToBookmarkButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is ReaderViewModel viewModel && ((FrameworkElement)sender).DataContext is Bookmark bookmark)
+        {
+            viewModel.GoToBookmarkCommand.Execute(bookmark);
+            BookmarkListToggle.IsChecked = false;
+        }
+    }
+
+    private void RemoveBookmarkButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is ReaderViewModel viewModel && ((FrameworkElement)sender).DataContext is Bookmark bookmark)
+        {
+            viewModel.RemoveBookmarkCommand.Execute(bookmark);
+        }
+    }
 
     private void GoToAdjacentPage(bool forward)
     {

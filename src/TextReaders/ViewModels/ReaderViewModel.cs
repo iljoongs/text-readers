@@ -1,3 +1,4 @@
+using System.Collections.ObjectModel;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Documents;
@@ -62,6 +63,8 @@ public partial class ReaderViewModel : ObservableObject
         ? $"{CurrentPageNumber} / {PageCount} ({(int)Math.Round(CurrentPageNumber * 100.0 / PageCount)}%)"
         : string.Empty;
 
+    public ObservableCollection<Bookmark> Bookmarks { get; } = new();
+
     public ReaderViewModel(IFileService fileService, ISettingsService settingsService, ILibraryService libraryService)
     {
         _fileService = fileService;
@@ -112,6 +115,12 @@ public partial class ReaderViewModel : ObservableObject
         Document = BuildFlowDocument(book.Content);
         ApplyDocumentFormatting();
 
+        Bookmarks.Clear();
+        foreach (var bookmark in _libraryService.GetBookmarks(book.FilePath))
+        {
+            Bookmarks.Add(bookmark);
+        }
+
         var savedPageIndex = _libraryService.GetLastPageIndex(book.FilePath);
         _libraryService.UpdatePosition(book.FilePath, savedPageIndex);
 
@@ -122,6 +131,34 @@ public partial class ReaderViewModel : ObservableObject
                 () => NavigateToPageRequested?.Invoke(savedPageIndex),
                 DispatcherPriority.ContextIdle);
         }
+    }
+
+    [RelayCommand]
+    private void AddBookmark()
+    {
+        if (CurrentBook is null)
+        {
+            return;
+        }
+
+        var bookmark = new Bookmark { PageNumber = CurrentPageNumber, CreatedAt = DateTime.Now };
+        _libraryService.AddBookmark(CurrentBook.FilePath, bookmark);
+        Bookmarks.Add(bookmark);
+    }
+
+    [RelayCommand]
+    private void GoToBookmark(Bookmark bookmark) => NavigateToPageRequested?.Invoke(bookmark.PageNumber);
+
+    [RelayCommand]
+    private void RemoveBookmark(Bookmark bookmark)
+    {
+        if (CurrentBook is null)
+        {
+            return;
+        }
+
+        _libraryService.RemoveBookmark(CurrentBook.FilePath, bookmark);
+        Bookmarks.Remove(bookmark);
     }
 
     partial void OnCurrentPageNumberChanged(int value)
