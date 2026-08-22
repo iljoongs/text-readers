@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using TextReaders.Models;
@@ -13,12 +14,17 @@ public partial class ReaderViewModel : ObservableObject
 {
     private readonly IFileService _fileService;
     private readonly ISettingsService _settingsService;
+    private readonly ILibraryService _libraryService;
+    private readonly DispatcherTimer _positionSaveTimer;
 
     [ObservableProperty]
     private Book? _currentBook;
 
     [ObservableProperty]
     private FlowDocument? _document;
+
+    [ObservableProperty]
+    private int _currentPageNumber = 1;
 
     [ObservableProperty]
     private string _fontFamilyName;
@@ -32,14 +38,17 @@ public partial class ReaderViewModel : ObservableObject
     [ObservableProperty]
     private MarginPreset _marginPreset;
 
+    public event Action<int>? NavigateToPageRequested;
+
     public IReadOnlyList<string> AvailableFontFamilyNames => FontCatalog.AvailableFontFamilyNames;
 
     public IReadOnlyList<MarginPreset> MarginPresetOptions { get; } = Enum.GetValues<MarginPreset>();
 
-    public ReaderViewModel(IFileService fileService, ISettingsService settingsService)
+    public ReaderViewModel(IFileService fileService, ISettingsService settingsService, ILibraryService libraryService)
     {
         _fileService = fileService;
         _settingsService = settingsService;
+        _libraryService = libraryService;
 
         var settings = _settingsService.Load();
         // 백킹 필드에 직접 대입해 생성자 초기화 중 OnXxxChanged 훅(재포맷/저장)이 돌지 않도록 한다.
@@ -47,6 +56,16 @@ public partial class ReaderViewModel : ObservableObject
         _fontSize = settings.FontSize;
         _lineSpacingMultiplier = settings.LineSpacingMultiplier;
         _marginPreset = settings.MarginPreset;
+
+        _positionSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
+        _positionSaveTimer.Tick += (_, _) =>
+        {
+            _positionSaveTimer.Stop();
+            if (CurrentBook is not null)
+            {
+                _libraryService.UpdatePosition(CurrentBook.FilePath, CurrentPageNumber);
+            }
+        };
     }
 
     [RelayCommand]
@@ -72,6 +91,23 @@ public partial class ReaderViewModel : ObservableObject
         CurrentBook = book;
         Document = BuildFlowDocument(book.Content);
         ApplyDocumentFormatting();
+
+        var savedPageIndex = _libraryService.GetLastPageIndex(book.FilePath);
+        _libraryService.UpdatePosition(book.FilePath, savedPageIndex);
+
+        if (savedPageIndex > 1)
+        {
+            // FlowDocumentPageViewer가 새 Document를 레이아웃할 시간을 준 뒤 페이지를 이동한다.
+            Application.Current.Dispatcher.BeginInvoke(
+                () => NavigateToPageRequested?.Invoke(savedPageIndex),
+                DispatcherPriority.ContextIdle);
+        }
+    }
+
+    partial void OnCurrentPageNumberChanged(int value)
+    {
+        _positionSaveTimer.Stop();
+        _positionSaveTimer.Start();
     }
 
     partial void OnFontFamilyNameChanged(string value) => OnFormattingChanged();
