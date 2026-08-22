@@ -15,4 +15,8 @@ public interface ILibraryService
     void AddBookmark(string filePath, Bookmark bookmark);
 
     void RemoveBookmark(string filePath, Bookmark bookmark);
+
+    IReadOnlyList<Highlight> GetHighlights(string filePath);
+
+    void AddHighlight(string filePath, Highlight highlight);
 }

@@ -118,6 +118,46 @@ public partial class MainWindow : Window
         }
     }
 
+    // 하이라이트는 한 문단 안에서 선택한 구간만 지원한다(문단 간 오프셋 매핑을 단순하게 유지하기 위해).
+    private void AddHighlightButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not ReaderViewModel viewModel || PageViewer.Document is not FlowDocument document)
+        {
+            return;
+        }
+
+        var selection = PageViewer.Selection;
+        if (selection.IsEmpty)
+        {
+            MessageBox.Show("먼저 하이라이트할 텍스트를 선택하세요.", "text-readers",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var paragraphs = document.Blocks.OfType<Paragraph>().ToList();
+        var paragraphIndex = paragraphs.FindIndex(p =>
+            p.ContentStart.CompareTo(selection.Start) <= 0 && p.ContentEnd.CompareTo(selection.End) >= 0);
+
+        if (paragraphIndex < 0)
+        {
+            MessageBox.Show("여러 문단에 걸친 선택은 지원하지 않습니다. 한 문단 안에서 선택해주세요.", "text-readers",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var paragraph = paragraphs[paragraphIndex];
+        var startOffset = new TextRange(paragraph.ContentStart, selection.Start).Text.Length;
+        var length = selection.Text.Length;
+
+        var dialog = new Views.NoteDialog { Owner = this };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        viewModel.AddHighlight(paragraphIndex, startOffset, length, dialog.NoteText);
+    }
+
     private void GoToAdjacentPage(bool forward)
     {
         if (_isAnimatingPageTurn)

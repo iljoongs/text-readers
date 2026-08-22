@@ -137,6 +137,8 @@ public partial class ReaderViewModel : ObservableObject
             Bookmarks.Add(bookmark);
         }
 
+        ApplyHighlights(_libraryService.GetHighlights(book.FilePath));
+
         _lastSearchParagraphIndex = -1;
 
         var savedPageIndex = _libraryService.GetLastPageIndex(book.FilePath);
@@ -210,6 +212,90 @@ public partial class ReaderViewModel : ObservableObject
 
         MessageBox.Show($"'{SearchQuery}'를 찾을 수 없습니다.", "text-readers",
             MessageBoxButton.OK, MessageBoxImage.Information);
+    }
+
+    public void AddHighlight(int paragraphIndex, int startOffset, int length, string? note)
+    {
+        if (CurrentBook is null)
+        {
+            return;
+        }
+
+        var highlight = new Highlight
+        {
+            ParagraphIndex = paragraphIndex,
+            StartOffset = startOffset,
+            Length = length,
+            Note = note,
+        };
+
+        _libraryService.AddHighlight(CurrentBook.FilePath, highlight);
+
+        // 같은 문단에 하이라이트가 여러 개 있을 수 있으므로, 그 문단에 속한 전체 하이라이트를
+        // 다시 모아서 한 번에 재구성한다 (하나씩 따로 적용하면 뒤에 적용된 것이 앞의 것의
+        // Inlines.Clear()에 의해 지워진다).
+        ApplyHighlights(_libraryService.GetHighlights(CurrentBook.FilePath));
+    }
+
+    // 하이라이트 구간을 별도 Run으로 잘라내 배경색(및 메모가 있으면 ToolTip)을 입힌다.
+    // 문단은 매 LoadBook마다 새로 만들어지므로, 저장된 하이라이트는 로드할 때마다 다시 적용해야 한다.
+    // 문단별로 묶어 한 번에 재구성해야 같은 문단 안의 여러 하이라이트가 서로를 지우지 않는다.
+    private void ApplyHighlights(IEnumerable<Highlight> highlights)
+    {
+        var paragraphs = Document?.Blocks.OfType<Paragraph>().ToList();
+        if (paragraphs is null)
+        {
+            return;
+        }
+
+        foreach (var group in highlights.GroupBy(h => h.ParagraphIndex))
+        {
+            if (group.Key < 0 || group.Key >= paragraphs.Count)
+            {
+                continue;
+            }
+
+            var paragraph = paragraphs[group.Key];
+            var fullText = new TextRange(paragraph.ContentStart, paragraph.ContentEnd).Text;
+
+            var ordered = group
+                .Where(h => h.StartOffset >= 0 && h.Length > 0 && h.StartOffset + h.Length <= fullText.Length)
+                .OrderBy(h => h.StartOffset)
+                .ToList();
+            if (ordered.Count == 0)
+            {
+                continue;
+            }
+
+            paragraph.Inlines.Clear();
+            var cursor = 0;
+            foreach (var highlight in ordered)
+            {
+                if (highlight.StartOffset < cursor)
+                {
+                    continue; // 겹치는 구간은 지원하지 않는다 - 먼저 온 하이라이트를 우선한다.
+                }
+
+                if (highlight.StartOffset > cursor)
+                {
+                    paragraph.Inlines.Add(new Run(fullText[cursor..highlight.StartOffset]));
+                }
+
+                var highlightRun = new Run(fullText.Substring(highlight.StartOffset, highlight.Length)) { Background = Brushes.Yellow };
+                if (!string.IsNullOrEmpty(highlight.Note))
+                {
+                    highlightRun.ToolTip = highlight.Note;
+                }
+
+                paragraph.Inlines.Add(highlightRun);
+                cursor = highlight.StartOffset + highlight.Length;
+            }
+
+            if (cursor < fullText.Length)
+            {
+                paragraph.Inlines.Add(new Run(fullText[cursor..]));
+            }
+        }
     }
 
     partial void OnSearchQueryChanged(string value) => _lastSearchParagraphIndex = -1;

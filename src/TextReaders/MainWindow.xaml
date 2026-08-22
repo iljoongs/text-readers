@@ -89,6 +89,9 @@
                 </TextBox.InputBindings>
             </TextBox>
             <Button Content="찾기" Command="{Binding FindNextCommand}" Padding="8,2" />
+
+            <Separator />
+            <Button Content="하이라이트" Click="AddHighlightButton_Click" Padding="8,2" />
         </ToolBar>
 
         <Grid>

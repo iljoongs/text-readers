@@ -62,6 +62,23 @@ public sealed class LibraryService : ILibraryService
         }
     }
 
+    public IReadOnlyList<Highlight> GetHighlights(string filePath)
+    {
+        var data = JsonFileStore.Load(FilePath, () => new LibraryData());
+        var entry = data.Entries.FirstOrDefault(e => e.FilePath == filePath);
+        return entry?.Highlights ?? new List<Highlight>();
+    }
+
+    public void AddHighlight(string filePath, Highlight highlight)
+    {
+        var data = JsonFileStore.Load(FilePath, () => new LibraryData());
+        var entry = GetOrCreateEntry(data, filePath);
+
+        entry.Highlights.Add(highlight);
+
+        JsonFileStore.Save(FilePath, data);
+    }
+
     private static LibraryEntry GetOrCreateEntry(LibraryData data, string filePath)
     {
         var entry = data.Entries.FirstOrDefault(e => e.FilePath == filePath);

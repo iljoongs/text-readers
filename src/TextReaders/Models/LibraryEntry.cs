@@ -7,4 +7,6 @@ public sealed class LibraryEntry
     public int LastPageIndex { get; set; } = 1;
 
     public List<Bookmark> Bookmarks { get; set; } = new();
+
+    public List<Highlight> Highlights { get; set; } = new();
 }
