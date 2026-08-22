@@ -42,6 +42,9 @@ public partial class ReaderViewModel : ObservableObject
     [ObservableProperty]
     private ReadingTheme _theme;
 
+    [ObservableProperty]
+    private double _dimmingOpacity;
+
     public event Action<int>? NavigateToPageRequested;
 
     public IReadOnlyList<string> AvailableFontFamilyNames => FontCatalog.AvailableFontFamilyNames;
@@ -65,6 +68,7 @@ public partial class ReaderViewModel : ObservableObject
         _lineSpacingMultiplier = settings.LineSpacingMultiplier;
         _marginPreset = settings.MarginPreset;
         _theme = settings.Theme;
+        _dimmingOpacity = settings.DimmingOpacity;
 
         _positionSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         _positionSaveTimer.Tick += (_, _) =>
@@ -133,10 +137,16 @@ public partial class ReaderViewModel : ObservableObject
         OnFormattingChanged();
     }
 
+    partial void OnDimmingOpacityChanged(double value) => SaveDisplaySettings();
+
     private void OnFormattingChanged()
     {
         ApplyDocumentFormatting();
+        SaveDisplaySettings();
+    }
 
+    private void SaveDisplaySettings()
+    {
         // 창 크기/위치 등 이 ViewModel이 모르는 다른 설정 필드를 덮어쓰지 않도록 읽고-수정하고-저장한다.
         var settings = _settingsService.Load();
         settings.FontFamilyName = FontFamilyName;
@@ -144,6 +154,7 @@ public partial class ReaderViewModel : ObservableObject
         settings.LineSpacingMultiplier = LineSpacingMultiplier;
         settings.MarginPreset = MarginPreset;
         settings.Theme = Theme;
+        settings.DimmingOpacity = DimmingOpacity;
         _settingsService.Save(settings);
     }
 

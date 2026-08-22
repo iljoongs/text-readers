@@ -12,5 +12,7 @@ public sealed class AppSettings
 
     public ReadingTheme Theme { get; set; } = ReadingTheme.Paper;
 
+    public double DimmingOpacity { get; set; }
+
     public WindowGeometry? Window { get; set; }
 }

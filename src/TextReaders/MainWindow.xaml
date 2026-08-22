@@ -37,6 +37,10 @@
             <ComboBox Width="80" ItemsSource="{Binding ThemeOptions}" SelectedItem="{Binding Theme}" />
 
             <Separator />
+            <TextBlock Text="밝기" VerticalAlignment="Center" Margin="4,0" />
+            <Slider Width="90" Minimum="0" Maximum="0.7" Value="{Binding DimmingOpacity}" VerticalAlignment="Center" />
+
+            <Separator />
             <TextBlock Text="{Binding CurrentBook.Title}" VerticalAlignment="Center" Margin="12,0" />
         </ToolBar>
 
@@ -48,6 +52,8 @@
                     MouseLeftButtonDown="PreviousPageZone_MouseLeftButtonDown" />
             <Border Width="64" HorizontalAlignment="Right" Background="Transparent" Cursor="Hand"
                     MouseLeftButtonDown="NextPageZone_MouseLeftButtonDown" />
+
+            <Rectangle Fill="Black" IsHitTestVisible="False" Opacity="{Binding DimmingOpacity}" />
         </Grid>
     </DockPanel>
 </Window>
