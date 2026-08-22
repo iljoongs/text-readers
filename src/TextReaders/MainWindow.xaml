@@ -6,10 +6,6 @@
         xmlns:local="clr-namespace:TextReaders"
         mc:Ignorable="d"
         Title="text-readers" Height="720" Width="1080">
-    <Window.InputBindings>
-        <KeyBinding Key="Left" Command="NavigationCommands.PreviousPage" CommandTarget="{Binding ElementName=PageViewer}" />
-        <KeyBinding Key="Right" Command="NavigationCommands.NextPage" CommandTarget="{Binding ElementName=PageViewer}" />
-    </Window.InputBindings>
     <DockPanel>
         <ToolBar DockPanel.Dock="Top">
             <Button Content="파일 열기" Command="{Binding OpenFileCommand}" Padding="8,2" />
@@ -52,6 +48,9 @@
                     MouseLeftButtonDown="PreviousPageZone_MouseLeftButtonDown" />
             <Border Width="64" HorizontalAlignment="Right" Background="Transparent" Cursor="Hand"
                     MouseLeftButtonDown="NextPageZone_MouseLeftButtonDown" />
+
+            <Image x:Name="SnapshotOverlay" Visibility="Collapsed" IsHitTestVisible="False"
+                   HorizontalAlignment="Left" VerticalAlignment="Top" Stretch="None" RenderTransformOrigin="0,0" />
 
             <Rectangle Fill="Black" IsHitTestVisible="False" Opacity="{Binding DimmingOpacity}" />
         </Grid>

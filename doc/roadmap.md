@@ -6,13 +6,10 @@ Phase 1(MVP) 완료 이후 순차적으로 진행할 개발 계획. 지금 단�
 
 목표: "종이책을 읽는 느낌"을 실제로 구현.
 
-- **종이 질감 배경**: `ImageBrush`로 텍스처 이미지 적용
-- **페이지 넘김 애니메이션**: `RenderTransform` / `PlaneProjection` 등을 이용한 책장 넘기기 효과
-  - Phase 1의 "즉시 전환" 로직을 애니메이션으로 교체
-  - 성능(프레임 드랍) 확인 필요
-- **다크모드 / 세피아모드 / 종이모드**: 배경색·텍스트색 프리셋 3종 이상
-- **밝기 조절**: 야간 독서용 화면 밝기(또는 오버레이 딤 처리)
-- **페이지 넘김 사운드 효과** (선택적, on/off 토글)
+- [x] **종이 질감 배경 / 다크모드 / 세피아모드**: `ReadingTheme`(Paper/Dark/Sepia) 하나로 통합 구현. 종이 질감은 라이선스 있는 외부 이미지 대신 Python(PIL/numpy/scipy `gaussian_filter(mode="wrap")`)으로 이음매 없이 생성한 절차적 텍스처(`Assets/Textures/paper.png`) 사용. Dark/Sepia는 단색 배경/텍스트 색상.
+- [x] **페이지 넘김 애니메이션**: `RenderTargetBitmap`으로 전환 직전 화면을 캡처해 오버레이로 띄우고, 실제 페이지 전환은 그 뒤에서 즉시 실행한 뒤 `TranslateTransform`(`CubicEase` EaseOut) + 투명도로 오버레이를 슬라이드/페이드시키는 방식 채택. `FlowDocumentPageViewer`가 내부 렌더링을 직접 제어할 수 없어 PlaneProjection 3D 커얼 대신 이 방식을 선택 (구현/튜닝 리스크가 낮음).
+- [x] **밝기 조절**: 오버레이 딤 처리(검정 `Rectangle` + 투명도 슬라이더, 0~0.7)로 구현. 실제 모니터 밝기 제어는 하지 않음.
+- [ ] **페이지 넘김 사운드 효과** (선택적, on/off 토글) — 음원 파일을 새로 구해야 해서 이번 라운드에서는 제외, 필요 시 별도 진행.
 
 ## Phase 3 — 편의 기능
 
