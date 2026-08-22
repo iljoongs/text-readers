@@ -10,5 +10,7 @@ public sealed class AppSettings
 
     public MarginPreset MarginPreset { get; set; } = MarginPreset.Normal;
 
+    public ReadingTheme Theme { get; set; } = ReadingTheme.Paper;
+
     public WindowGeometry? Window { get; set; }
 }

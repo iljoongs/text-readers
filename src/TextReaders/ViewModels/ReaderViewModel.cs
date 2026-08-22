@@ -2,6 +2,7 @@ using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Documents;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -38,11 +39,18 @@ public partial class ReaderViewModel : ObservableObject
     [ObservableProperty]
     private MarginPreset _marginPreset;
 
+    [ObservableProperty]
+    private ReadingTheme _theme;
+
     public event Action<int>? NavigateToPageRequested;
 
     public IReadOnlyList<string> AvailableFontFamilyNames => FontCatalog.AvailableFontFamilyNames;
 
     public IReadOnlyList<MarginPreset> MarginPresetOptions { get; } = Enum.GetValues<MarginPreset>();
+
+    public IReadOnlyList<ReadingTheme> ThemeOptions { get; } = Enum.GetValues<ReadingTheme>();
+
+    public Brush PageBackgroundBrush => GetPageBackgroundBrush();
 
     public ReaderViewModel(IFileService fileService, ISettingsService settingsService, ILibraryService libraryService)
     {
@@ -56,6 +64,7 @@ public partial class ReaderViewModel : ObservableObject
         _fontSize = settings.FontSize;
         _lineSpacingMultiplier = settings.LineSpacingMultiplier;
         _marginPreset = settings.MarginPreset;
+        _theme = settings.Theme;
 
         _positionSaveTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(500) };
         _positionSaveTimer.Tick += (_, _) =>
@@ -118,6 +127,12 @@ public partial class ReaderViewModel : ObservableObject
 
     partial void OnMarginPresetChanged(MarginPreset value) => OnFormattingChanged();
 
+    partial void OnThemeChanged(ReadingTheme value)
+    {
+        OnPropertyChanged(nameof(PageBackgroundBrush));
+        OnFormattingChanged();
+    }
+
     private void OnFormattingChanged()
     {
         ApplyDocumentFormatting();
@@ -128,6 +143,7 @@ public partial class ReaderViewModel : ObservableObject
         settings.FontSize = FontSize;
         settings.LineSpacingMultiplier = LineSpacingMultiplier;
         settings.MarginPreset = MarginPreset;
+        settings.Theme = Theme;
         _settingsService.Save(settings);
     }
 
@@ -141,6 +157,8 @@ public partial class ReaderViewModel : ObservableObject
         Document.FontFamily = new FontFamily(new Uri("pack://application:,,,/"), $"./Assets/Fonts/#{FontFamilyName}");
         Document.FontSize = FontSize;
         Document.PagePadding = new Thickness(GetMarginSize());
+        Document.Background = GetPageBackgroundBrush();
+        Document.Foreground = GetForegroundBrush();
 
         var lineHeight = FontSize * 1.3 * LineSpacingMultiplier;
         foreach (var paragraph in Document.Blocks.OfType<Paragraph>())
@@ -155,6 +173,31 @@ public partial class ReaderViewModel : ObservableObject
         MarginPreset.Wide => 80,
         _ => 48,
     };
+
+    private Brush GetPageBackgroundBrush() => Theme switch
+    {
+        ReadingTheme.Dark => new SolidColorBrush(Color.FromRgb(0x1E, 0x1E, 0x1E)),
+        ReadingTheme.Sepia => new SolidColorBrush(Color.FromRgb(0xF4, 0xEC, 0xD8)),
+        _ => CreatePaperTextureBrush(),
+    };
+
+    private Brush GetForegroundBrush() => Theme switch
+    {
+        ReadingTheme.Dark => new SolidColorBrush(Color.FromRgb(0xD4, 0xD4, 0xD4)),
+        ReadingTheme.Sepia => new SolidColorBrush(Color.FromRgb(0x5B, 0x46, 0x36)),
+        _ => new SolidColorBrush(Color.FromRgb(0x2B, 0x26, 0x20)),
+    };
+
+    private static Brush CreatePaperTextureBrush()
+    {
+        var image = new BitmapImage(new Uri("pack://application:,,,/Assets/Textures/paper.png"));
+        return new ImageBrush(image)
+        {
+            TileMode = TileMode.Tile,
+            Viewport = new Rect(0, 0, image.PixelWidth, image.PixelHeight),
+            ViewportUnits = BrushMappingMode.Absolute,
+        };
+    }
 
     private static FlowDocument BuildFlowDocument(string content)
     {
