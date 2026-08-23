@@ -27,4 +27,6 @@ public interface ILibraryService
     void MarkCompleted(string filePath);
 
     void ImportEntry(string filePath, IReadOnlyList<Bookmark> bookmarks, IReadOnlyList<Highlight> highlights, int lastPageIndex);
+
+    void RenameEntry(string oldFilePath, string newFilePath);
 }

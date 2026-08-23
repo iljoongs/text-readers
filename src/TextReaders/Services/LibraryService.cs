@@ -120,6 +120,25 @@ public sealed class LibraryService : ILibraryService
         JsonFileStore.Save(FilePath, data);
     }
 
+    // Text > Edit Title로 파일을 rename한 뒤, 그 파일을 가리키던 라이브러리 항목과
+    // "마지막으로 연 파일" 기록을 새 경로로 옮겨준다.
+    public void RenameEntry(string oldFilePath, string newFilePath)
+    {
+        var data = JsonFileStore.Load(FilePath, () => new LibraryData());
+        var entry = data.Entries.FirstOrDefault(e => e.FilePath == oldFilePath);
+        if (entry is not null)
+        {
+            entry.FilePath = newFilePath;
+        }
+
+        if (data.LastOpenedFilePath == oldFilePath)
+        {
+            data.LastOpenedFilePath = newFilePath;
+        }
+
+        JsonFileStore.Save(FilePath, data);
+    }
+
     private static LibraryEntry GetOrCreateEntry(LibraryData data, string filePath)
     {
         var entry = data.Entries.FirstOrDefault(e => e.FilePath == filePath);

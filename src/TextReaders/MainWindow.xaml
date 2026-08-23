@@ -19,6 +19,10 @@
                         <MenuItem Header="Save" Command="{Binding SaveCommand}" />
                         <MenuItem Header="Save As" Command="{Binding SaveAsCommand}" />
                     </MenuItem>
+                    <MenuItem Header="Text">
+                        <MenuItem Header="Edit" Click="EditTextMenuItem_Click" />
+                        <MenuItem Header="Edit Title" Click="EditTitleMenuItem_Click" />
+                    </MenuItem>
                     <MenuItem Header="Settings" Click="SettingsMenuItem_Click" />
                 </MenuItem>
             </Menu>

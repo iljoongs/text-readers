@@ -284,25 +284,13 @@ public partial class ReaderViewModel : ObservableObject
         _currentBundlePath = null;
 
         CurrentBook = book;
-        var (document, tocEntries) = book.IsMarkdown
-            ? MarkdownFlowDocumentBuilder.Build(book.Content)
-            : BuildFlowDocument(book.Content);
-        Document = document;
-        ApplyDocumentFormatting();
-
-        TableOfContents.Clear();
-        foreach (var entry in tocEntries)
-        {
-            TableOfContents.Add(entry);
-        }
+        RebuildDocumentFromCurrentBook();
 
         Bookmarks.Clear();
         foreach (var bookmark in _libraryService.GetBookmarks(book.FilePath))
         {
             Bookmarks.Add(bookmark);
         }
-
-        ApplyHighlights(_libraryService.GetHighlights(book.FilePath));
 
         _lastSearchParagraphIndex = -1;
 
@@ -316,6 +304,112 @@ public partial class ReaderViewModel : ObservableObject
                 () => NavigateToPageRequested?.Invoke(savedPageIndex),
                 DispatcherPriority.ContextIdle);
         }
+
+        RefreshLibraryEntries();
+    }
+
+    // LoadBook과 UpdateContent가 공유하는 "CurrentBook.Content로 Document/목차/하이라이트를 다시 그리기".
+    // 북마크/읽기 위치/라이브러리 갱신처럼 "새 책을 여는" 맥락에서만 필요한 절차는 포함하지 않는다.
+    private void RebuildDocumentFromCurrentBook()
+    {
+        if (CurrentBook is null)
+        {
+            return;
+        }
+
+        var (document, tocEntries) = CurrentBook.IsMarkdown
+            ? MarkdownFlowDocumentBuilder.Build(CurrentBook.Content)
+            : BuildFlowDocument(CurrentBook.Content);
+        Document = document;
+        ApplyDocumentFormatting();
+
+        TableOfContents.Clear();
+        foreach (var entry in tocEntries)
+        {
+            TableOfContents.Add(entry);
+        }
+
+        ApplyHighlights(_libraryService.GetHighlights(CurrentBook.FilePath));
+    }
+
+    // Text > Edit. 같은 책의 본문만 바꾸는 것이므로 LoadBook 전체를 다시 타지 않고
+    // 문서만 재구성한다 - 북마크/하이라이트의 문단 오프셋은 편집 후 어긋날 수 있음을 감수한다
+    // (폰트를 바꾸면 페이지 번호 기반 북마크가 밀리는 것과 같은 성격의 단순화).
+    public void UpdateContent(string newContent)
+    {
+        if (CurrentBook is null)
+        {
+            return;
+        }
+
+        CurrentBook = new Book
+        {
+            FilePath = CurrentBook.FilePath,
+            Title = CurrentBook.Title,
+            Content = newContent,
+            IsMarkdown = CurrentBook.IsMarkdown,
+        };
+
+        RebuildDocumentFromCurrentBook();
+
+        if (_currentBundlePath is not null)
+        {
+            SaveBundleTo(_currentBundlePath);
+        }
+        else
+        {
+            File.WriteAllText(CurrentBook.FilePath, newContent);
+        }
+    }
+
+    // Text > Edit Title. 제목은 파일 이름에서 그대로 가져오는 값이라, 제목을 바꾸는 것은
+    // 실제로 파일 이름을 바꾸는 것과 같다. 라이브러리 항목/번들 경로도 새 경로로 옮겨준다.
+    public void RenameCurrentFile(string newTitle)
+    {
+        if (CurrentBook is null)
+        {
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(newTitle))
+        {
+            throw new ArgumentException("제목을 입력해주세요.");
+        }
+
+        if (newTitle.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)
+        {
+            throw new ArgumentException("파일 이름에 사용할 수 없는 문자가 포함되어 있습니다.");
+        }
+
+        var directory = Path.GetDirectoryName(CurrentBook.FilePath)!;
+        var extension = Path.GetExtension(CurrentBook.FilePath);
+        var newFilePath = Path.Combine(directory, newTitle + extension);
+
+        if (string.Equals(newFilePath, CurrentBook.FilePath, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        if (File.Exists(newFilePath))
+        {
+            throw new IOException("같은 이름의 파일이 이미 있습니다.");
+        }
+
+        File.Move(CurrentBook.FilePath, newFilePath);
+        _libraryService.RenameEntry(CurrentBook.FilePath, newFilePath);
+
+        if (_currentBundlePath == CurrentBook.FilePath)
+        {
+            _currentBundlePath = newFilePath;
+        }
+
+        CurrentBook = new Book
+        {
+            FilePath = newFilePath,
+            Title = newTitle,
+            Content = CurrentBook.Content,
+            IsMarkdown = CurrentBook.IsMarkdown,
+        };
 
         RefreshLibraryEntries();
     }

@@ -122,6 +122,46 @@ public partial class MainWindow : Window
         }
     }
 
+    private void EditTextMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not ReaderViewModel viewModel || viewModel.CurrentBook is null)
+        {
+            MessageBox.Show("먼저 책을 열어주세요.", "text-readers", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new Views.TextEditWindow(viewModel.CurrentBook.Content) { Owner = this };
+        if (dialog.ShowDialog() == true)
+        {
+            viewModel.UpdateContent(dialog.EditedText);
+        }
+    }
+
+    private void EditTitleMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not ReaderViewModel viewModel || viewModel.CurrentBook is null)
+        {
+            MessageBox.Show("먼저 책을 열어주세요.", "text-readers", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new Views.EditTitleDialog(viewModel.CurrentBook.Title) { Owner = this };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        try
+        {
+            viewModel.RenameCurrentFile(dialog.NewTitle);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"제목을 바꾸는 중 오류가 발생했습니다.\n{ex.Message}", "text-readers",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void GoToBookmarkButton_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is ReaderViewModel viewModel && ((FrameworkElement)sender).DataContext is Bookmark bookmark)
