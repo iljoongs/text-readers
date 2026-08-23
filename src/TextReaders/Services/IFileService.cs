@@ -4,7 +4,7 @@ namespace TextReaders.Services;
 
 public interface IFileService
 {
-    Book? OpenBookFromDialog();
+    string? ShowOpenFileDialog();
 
     Book LoadBook(string filePath);
 }

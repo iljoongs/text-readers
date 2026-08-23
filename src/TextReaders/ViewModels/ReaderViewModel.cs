@@ -20,6 +20,7 @@ public partial class ReaderViewModel : ObservableObject
     private readonly ILibraryService _libraryService;
     private readonly IFontService _fontService;
     private readonly ITextToSpeechService _ttsService;
+    private readonly IBundleService _bundleService;
     private readonly DispatcherTimer _positionSaveTimer;
     private readonly DispatcherTimer _readingTimeTimer;
     private static readonly TimeSpan ReadingTimeTickInterval = TimeSpan.FromSeconds(30);
@@ -65,6 +66,10 @@ public partial class ReaderViewModel : ObservableObject
 
     private int _lastSearchParagraphIndex = -1;
 
+    // Menu > File > 저장이 덮어쓸 대상. 번들(.json)로 열거나 저장한 적이 없으면 null이고,
+    // 이 경우 저장은 다른 이름으로 저장과 동일하게 동작한다.
+    private string? _currentBundlePath;
+
     public event Action<int>? NavigateToPageRequested;
 
     public event Action<Paragraph>? NavigateToParagraphRequested;
@@ -100,13 +105,14 @@ public partial class ReaderViewModel : ObservableObject
 
     public bool CanStartReading => !IsSpeaking;
 
-    public ReaderViewModel(IFileService fileService, ISettingsService settingsService, ILibraryService libraryService, IFontService fontService, ITextToSpeechService ttsService)
+    public ReaderViewModel(IFileService fileService, ISettingsService settingsService, ILibraryService libraryService, IFontService fontService, ITextToSpeechService ttsService, IBundleService bundleService)
     {
         _fileService = fileService;
         _settingsService = settingsService;
         _libraryService = libraryService;
         _fontService = fontService;
         _ttsService = ttsService;
+        _bundleService = bundleService;
 
         // TTS 이벤트는 SpeechSynthesizer의 백그라운드 스레드에서 발생하므로 UI 스레드로 넘겨준다.
         _ttsService.ParagraphStarted += paragraph =>
@@ -157,10 +163,10 @@ public partial class ReaderViewModel : ObservableObject
     {
         try
         {
-            var book = _fileService.OpenBookFromDialog();
-            if (book is not null)
+            var path = _fileService.ShowOpenFileDialog();
+            if (path is not null)
             {
-                LoadBook(book);
+                OpenPath(path);
             }
         }
         catch (Exception ex)
@@ -170,13 +176,115 @@ public partial class ReaderViewModel : ObservableObject
         }
     }
 
+    // 확장자가 .json이면 번들, 그 외에는 일반 txt/md로 취급한다.
+    // OpenFile/라이브러리 항목 열기/마지막 세션 복원 세 경로가 모두 이 메서드를 거친다.
+    public void OpenPath(string filePath)
+    {
+        if (Path.GetExtension(filePath).Equals(".json", StringComparison.OrdinalIgnoreCase))
+        {
+            OpenBundle(filePath);
+        }
+        else
+        {
+            LoadBook(_fileService.LoadBook(filePath));
+        }
+    }
+
+    private void OpenBundle(string filePath)
+    {
+        var bundle = _bundleService.Load(filePath);
+
+        _libraryService.ImportEntry(filePath, bundle.Bookmarks, bundle.Highlights, bundle.LastPageIndex);
+
+        FontFamilyName = bundle.FontFamilyName;
+        FontSize = bundle.FontSize;
+        LineSpacingMultiplier = bundle.LineSpacingMultiplier;
+        MarginPreset = bundle.MarginPreset;
+        Theme = bundle.Theme;
+        DimmingOpacity = bundle.DimmingOpacity;
+
+        // LoadBook이 시작하면서 _currentBundlePath를 null로 초기화하므로, 그 뒤에 다시 설정한다.
+        LoadBook(new Book
+        {
+            FilePath = filePath,
+            Title = Path.GetFileNameWithoutExtension(filePath),
+            Content = bundle.Content,
+            IsMarkdown = bundle.IsMarkdown,
+        });
+        _currentBundlePath = filePath;
+    }
+
+    [RelayCommand]
+    private void Save()
+    {
+        if (CurrentBook is null)
+        {
+            return;
+        }
+
+        if (_currentBundlePath is not null)
+        {
+            SaveBundleTo(_currentBundlePath);
+        }
+        else
+        {
+            SaveAs();
+        }
+    }
+
+    [RelayCommand]
+    private void SaveAs()
+    {
+        if (CurrentBook is null)
+        {
+            return;
+        }
+
+        var suggestedFileName = Path.GetFileNameWithoutExtension(CurrentBook.FilePath) + ".json";
+        var path = _bundleService.ShowSaveFileDialog(suggestedFileName);
+        if (path is not null)
+        {
+            SaveBundleTo(path);
+        }
+    }
+
+    private void SaveBundleTo(string filePath)
+    {
+        if (CurrentBook is null)
+        {
+            return;
+        }
+
+        var bundle = new ReaderBundle
+        {
+            Content = CurrentBook.Content,
+            IsMarkdown = CurrentBook.IsMarkdown,
+            FontFamilyName = FontFamilyName,
+            FontSize = FontSize,
+            LineSpacingMultiplier = LineSpacingMultiplier,
+            MarginPreset = MarginPreset,
+            Theme = Theme,
+            DimmingOpacity = DimmingOpacity,
+            LastPageIndex = CurrentPageNumber,
+            Bookmarks = Bookmarks.ToList(),
+            Highlights = _libraryService.GetHighlights(CurrentBook.FilePath).ToList(),
+        };
+
+        _bundleService.Save(filePath, bundle);
+        _currentBundlePath = filePath;
+    }
+
     public void LoadBook(Book book)
     {
         // 새 문서를 불러오면 이전 문서의 Paragraph를 가리키던 TTS 재생을 이어갈 수 없으므로 멈춘다.
         StopReading();
 
+        // 번들이 아닌 새 파일을 열면(txt/md/라이브러리 항목) "저장"이 번들을 덮어쓰지 않도록 초기화한다.
+        // OpenBundle은 이 값을 이 호출 이후에 다시 설정한다.
+        _currentBundlePath = null;
+
         CurrentBook = book;
-        var (document, tocEntries) = Path.GetExtension(book.FilePath).Equals(".md", StringComparison.OrdinalIgnoreCase)
+        var (document, tocEntries) = book.IsMarkdown
             ? MarkdownFlowDocumentBuilder.Build(book.Content)
             : BuildFlowDocument(book.Content);
         Document = document;
@@ -217,7 +325,7 @@ public partial class ReaderViewModel : ObservableObject
     {
         try
         {
-            LoadBook(_fileService.LoadBook(entry.FilePath));
+            OpenPath(entry.FilePath);
         }
         catch (Exception ex)
         {

@@ -13,15 +13,15 @@ public sealed class FileService : IFileService
         _encodingDetectionService = encodingDetectionService;
     }
 
-    public Book? OpenBookFromDialog()
+    public string? ShowOpenFileDialog()
     {
         var dialog = new OpenFileDialog
         {
-            Filter = "지원 파일 (*.txt;*.md)|*.txt;*.md|텍스트 파일 (*.txt)|*.txt|마크다운 파일 (*.md)|*.md",
+            Filter = "지원 파일 (*.txt;*.md;*.json)|*.txt;*.md;*.json|텍스트 파일 (*.txt)|*.txt|마크다운 파일 (*.md)|*.md|번들 파일 (*.json)|*.json",
             CheckFileExists = true,
         };
 
-        return dialog.ShowDialog() == true ? LoadBook(dialog.FileName) : null;
+        return dialog.ShowDialog() == true ? dialog.FileName : null;
     }
 
     public Book LoadBook(string filePath)
@@ -35,6 +35,7 @@ public sealed class FileService : IFileService
             FilePath = filePath,
             Title = Path.GetFileNameWithoutExtension(filePath),
             Content = content,
+            IsMarkdown = Path.GetExtension(filePath).Equals(".md", StringComparison.OrdinalIgnoreCase),
         };
     }
 }

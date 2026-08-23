@@ -106,6 +106,20 @@ public sealed class LibraryService : ILibraryService
         JsonFileStore.Save(FilePath, data);
     }
 
+    // 번들(.json)을 열 때, 번들 안에 저장된 북마크/하이라이트/읽기 위치를 이 파일 경로의
+    // 라이브러리 항목으로 그대로 옮겨 심는다 - 이후에는 일반 파일과 동일한 조회 경로(GetBookmarks 등)로 읽힌다.
+    public void ImportEntry(string filePath, IReadOnlyList<Bookmark> bookmarks, IReadOnlyList<Highlight> highlights, int lastPageIndex)
+    {
+        var data = JsonFileStore.Load(FilePath, () => new LibraryData());
+        var entry = GetOrCreateEntry(data, filePath);
+
+        entry.Bookmarks = bookmarks.ToList();
+        entry.Highlights = highlights.ToList();
+        entry.LastPageIndex = lastPageIndex;
+
+        JsonFileStore.Save(FilePath, data);
+    }
+
     private static LibraryEntry GetOrCreateEntry(LibraryData data, string filePath)
     {
         var entry = data.Entries.FirstOrDefault(e => e.FilePath == filePath);

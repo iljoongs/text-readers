@@ -25,4 +25,6 @@ public interface ILibraryService
     void AddReadingTime(string filePath, double seconds);
 
     void MarkCompleted(string filePath);
+
+    void ImportEntry(string filePath, IReadOnlyList<Bookmark> bookmarks, IReadOnlyList<Highlight> highlights, int lastPageIndex);
 }

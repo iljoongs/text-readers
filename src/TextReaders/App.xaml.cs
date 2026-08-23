@@ -20,15 +20,16 @@ public partial class App : Application
         ILibraryService libraryService = new LibraryService();
         IFontService fontService = new FontService();
         ITextToSpeechService ttsService = new TextToSpeechService();
+        IBundleService bundleService = new BundleService();
 
-        var readerViewModel = new ReaderViewModel(fileService, settingsService, libraryService, fontService, ttsService);
+        var readerViewModel = new ReaderViewModel(fileService, settingsService, libraryService, fontService, ttsService, bundleService);
 
         var lastOpenedFilePath = libraryService.GetLastOpenedFilePath();
         if (lastOpenedFilePath is not null && File.Exists(lastOpenedFilePath))
         {
             try
             {
-                readerViewModel.LoadBook(fileService.LoadBook(lastOpenedFilePath));
+                readerViewModel.OpenPath(lastOpenedFilePath);
             }
             catch (IOException)
             {
