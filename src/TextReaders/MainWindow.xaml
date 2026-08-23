@@ -98,9 +98,9 @@
             <FlowDocumentPageViewer x:Name="PageViewer" Document="{Binding Document}"
                                      Background="{Binding PageBackgroundBrush}" />
 
-            <Border Width="64" HorizontalAlignment="Left" Background="Transparent" Cursor="Hand"
+            <Border Width="64" Margin="0,0,0,40" HorizontalAlignment="Left" Background="Transparent" Cursor="Hand"
                     MouseLeftButtonDown="PreviousPageZone_MouseLeftButtonDown" />
-            <Border Width="64" HorizontalAlignment="Right" Background="Transparent" Cursor="Hand"
+            <Border Width="64" Margin="0,0,0,40" HorizontalAlignment="Right" Background="Transparent" Cursor="Hand"
                     MouseLeftButtonDown="NextPageZone_MouseLeftButtonDown" />
 
             <Image x:Name="SnapshotOverlay" Visibility="Collapsed" IsHitTestVisible="False"
