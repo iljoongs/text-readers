@@ -17,6 +17,7 @@ public partial class ReaderViewModel : ObservableObject
     private readonly IFileService _fileService;
     private readonly ISettingsService _settingsService;
     private readonly ILibraryService _libraryService;
+    private readonly IFontService _fontService;
     private readonly DispatcherTimer _positionSaveTimer;
     private readonly DispatcherTimer _readingTimeTimer;
     private static readonly TimeSpan ReadingTimeTickInterval = TimeSpan.FromSeconds(30);
@@ -60,7 +61,7 @@ public partial class ReaderViewModel : ObservableObject
 
     public event Action<Paragraph>? NavigateToParagraphRequested;
 
-    public IReadOnlyList<string> AvailableFontFamilyNames => FontCatalog.AvailableFontFamilyNames;
+    public IReadOnlyList<string> AvailableFontFamilyNames => _fontService.GetAvailableFontFamilyNames();
 
     public IReadOnlyList<MarginPreset> MarginPresetOptions { get; } = Enum.GetValues<MarginPreset>();
 
@@ -89,11 +90,12 @@ public partial class ReaderViewModel : ObservableObject
 
     public int CompletedBookCount => LibraryEntries.Count(e => e.IsCompleted);
 
-    public ReaderViewModel(IFileService fileService, ISettingsService settingsService, ILibraryService libraryService)
+    public ReaderViewModel(IFileService fileService, ISettingsService settingsService, ILibraryService libraryService, IFontService fontService)
     {
         _fileService = fileService;
         _settingsService = settingsService;
         _libraryService = libraryService;
+        _fontService = fontService;
 
         var settings = _settingsService.Load();
         // 백킹 필드에 직접 대입해 생성자 초기화 중 OnXxxChanged 훅(재포맷/저장)이 돌지 않도록 한다.
@@ -365,6 +367,27 @@ public partial class ReaderViewModel : ObservableObject
         }
     }
 
+    [RelayCommand]
+    private void AddCustomFont()
+    {
+        try
+        {
+            var familyName = _fontService.AddCustomFontFromDialog();
+            if (familyName is null)
+            {
+                return;
+            }
+
+            OnPropertyChanged(nameof(AvailableFontFamilyNames));
+            FontFamilyName = familyName;
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"폰트를 추가하는 중 오류가 발생했습니다.\n{ex.Message}", "text-readers",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     partial void OnSearchQueryChanged(string value) => _lastSearchParagraphIndex = -1;
 
     partial void OnCurrentPageNumberChanged(int value)
@@ -423,7 +446,7 @@ public partial class ReaderViewModel : ObservableObject
             return;
         }
 
-        Document.FontFamily = new FontFamily(new Uri("pack://application:,,,/"), $"./Assets/Fonts/#{FontFamilyName}");
+        Document.FontFamily = _fontService.ResolveFontFamily(FontFamilyName);
         Document.FontSize = FontSize;
         Document.PagePadding = new Thickness(GetMarginSize());
         Document.Background = GetPageBackgroundBrush();

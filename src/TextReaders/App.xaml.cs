@@ -18,8 +18,9 @@ public partial class App : Application
         IFileService fileService = new FileService(encodingDetectionService);
         ISettingsService settingsService = new SettingsService();
         ILibraryService libraryService = new LibraryService();
+        IFontService fontService = new FontService();
 
-        var readerViewModel = new ReaderViewModel(fileService, settingsService, libraryService);
+        var readerViewModel = new ReaderViewModel(fileService, settingsService, libraryService, fontService);
 
         var lastOpenedFilePath = libraryService.GetLastOpenedFilePath();
         if (lastOpenedFilePath is not null && File.Exists(lastOpenedFilePath))

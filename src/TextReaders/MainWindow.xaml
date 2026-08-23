@@ -14,6 +14,7 @@
 
             <TextBlock Text="글꼴" VerticalAlignment="Center" Margin="4,0" />
             <ComboBox Width="150" ItemsSource="{Binding AvailableFontFamilyNames}" SelectedItem="{Binding FontFamilyName}" />
+            <Button Content="+" ToolTip="폰트 추가" Command="{Binding AddCustomFontCommand}" Padding="6,2" Margin="2,0,0,0" />
 
             <Separator />
             <TextBlock Text="크기" VerticalAlignment="Center" Margin="4,0" />
