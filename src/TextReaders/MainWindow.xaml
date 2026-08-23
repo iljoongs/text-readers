@@ -11,27 +11,16 @@
         <views:PauseResumeLabelConverter x:Key="PauseResumeLabelConverter" />
     </Window.Resources>
     <DockPanel>
-        <ToolBar DockPanel.Dock="Top">
-            <ToggleButton x:Name="HamburgerMenuToggle" Content="☰" Padding="8,2" />
-            <Popup PlacementTarget="{Binding ElementName=HamburgerMenuToggle}"
-                   IsOpen="{Binding IsChecked, ElementName=HamburgerMenuToggle}"
-                   StaysOpen="True" Placement="Bottom">
-                <Border Background="White" BorderBrush="Gray" BorderThickness="1" Padding="4" MinWidth="160">
-                    <StackPanel>
-                        <Button Content="열기" Command="{Binding OpenFileCommand}" Click="MenuItemButton_Click"
-                                HorizontalContentAlignment="Left" Padding="8,4" />
-                        <Button Content="저장" Command="{Binding SaveCommand}" Click="MenuItemButton_Click"
-                                HorizontalContentAlignment="Left" Padding="8,4" />
-                        <Button Content="다른 이름으로 저장" Command="{Binding SaveAsCommand}" Click="MenuItemButton_Click"
-                                HorizontalContentAlignment="Left" Padding="8,4" />
-                        <Separator />
-                        <Button Content="설정" Click="SettingsMenuButton_Click"
-                                HorizontalContentAlignment="Left" Padding="8,4" />
-                    </StackPanel>
-                </Border>
-            </Popup>
-            <Separator />
+        <Menu DockPanel.Dock="Top">
+            <MenuItem Header="File">
+                <MenuItem Header="Open" Command="{Binding OpenFileCommand}" />
+                <MenuItem Header="Save" Command="{Binding SaveCommand}" />
+                <MenuItem Header="Save As" Command="{Binding SaveAsCommand}" />
+            </MenuItem>
+            <MenuItem Header="Settings" Click="SettingsMenuItem_Click" />
+        </Menu>
 
+        <ToolBar DockPanel.Dock="Top">
             <Button Content="라이브러리" Click="LibraryButton_Click" Padding="8,2" />
             <Separator />
 

@@ -108,13 +108,8 @@ public partial class MainWindow : Window
         }
     }
 
-    // 열기/저장/다른 이름으로 저장은 커맨드 바인딩이 실제 동작을 하고, 이 핸들러는 팝업을 닫기만 한다.
-    private void MenuItemButton_Click(object sender, RoutedEventArgs e) => HamburgerMenuToggle.IsChecked = false;
-
-    private void SettingsMenuButton_Click(object sender, RoutedEventArgs e)
+    private void SettingsMenuItem_Click(object sender, RoutedEventArgs e)
     {
-        HamburgerMenuToggle.IsChecked = false;
-
         if (_settingsWindow is null)
         {
             _settingsWindow = new Views.SettingsWindow { Owner = this, DataContext = DataContext };
