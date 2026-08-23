@@ -86,6 +86,26 @@ public sealed class LibraryService : ILibraryService
         JsonFileStore.Save(FilePath, data);
     }
 
+    public void AddReadingTime(string filePath, double seconds)
+    {
+        var data = JsonFileStore.Load(FilePath, () => new LibraryData());
+        var entry = GetOrCreateEntry(data, filePath);
+
+        entry.TotalReadingSeconds += seconds;
+
+        JsonFileStore.Save(FilePath, data);
+    }
+
+    public void MarkCompleted(string filePath)
+    {
+        var data = JsonFileStore.Load(FilePath, () => new LibraryData());
+        var entry = GetOrCreateEntry(data, filePath);
+
+        entry.IsCompleted = true;
+
+        JsonFileStore.Save(FilePath, data);
+    }
+
     private static LibraryEntry GetOrCreateEntry(LibraryData data, string filePath)
     {
         var entry = data.Entries.FirstOrDefault(e => e.FilePath == filePath);

@@ -18,6 +18,8 @@ public partial class ReaderViewModel : ObservableObject
     private readonly ISettingsService _settingsService;
     private readonly ILibraryService _libraryService;
     private readonly DispatcherTimer _positionSaveTimer;
+    private readonly DispatcherTimer _readingTimeTimer;
+    private static readonly TimeSpan ReadingTimeTickInterval = TimeSpan.FromSeconds(30);
 
     [ObservableProperty]
     private Book? _currentBook;
@@ -76,6 +78,17 @@ public partial class ReaderViewModel : ObservableObject
 
     public ObservableCollection<LibraryEntry> LibraryEntries { get; } = new();
 
+    public string TotalReadingTimeText
+    {
+        get
+        {
+            var totalMinutes = (int)(LibraryEntries.Sum(e => e.TotalReadingSeconds) / 60);
+            return totalMinutes >= 60 ? $"{totalMinutes / 60}시간 {totalMinutes % 60}분" : $"{totalMinutes}분";
+        }
+    }
+
+    public int CompletedBookCount => LibraryEntries.Count(e => e.IsCompleted);
+
     public ReaderViewModel(IFileService fileService, ISettingsService settingsService, ILibraryService libraryService)
     {
         _fileService = fileService;
@@ -100,6 +113,18 @@ public partial class ReaderViewModel : ObservableObject
                 _libraryService.UpdatePosition(CurrentBook.FilePath, CurrentPageNumber);
             }
         };
+
+        // 책이 열려 있고 창이 활성 상태일 때만 독서 시간을 누적한다.
+        _readingTimeTimer = new DispatcherTimer { Interval = ReadingTimeTickInterval };
+        _readingTimeTimer.Tick += (_, _) =>
+        {
+            if (CurrentBook is not null && (Application.Current.MainWindow?.IsActive ?? false))
+            {
+                _libraryService.AddReadingTime(CurrentBook.FilePath, ReadingTimeTickInterval.TotalSeconds);
+                RefreshLibraryEntries();
+            }
+        };
+        _readingTimeTimer.Start();
 
         RefreshLibraryEntries();
     }
@@ -179,6 +204,19 @@ public partial class ReaderViewModel : ObservableObject
         foreach (var entry in _libraryService.GetAllEntries())
         {
             LibraryEntries.Add(entry);
+        }
+
+        OnPropertyChanged(nameof(TotalReadingTimeText));
+        OnPropertyChanged(nameof(CompletedBookCount));
+    }
+
+    // 폰트/여백을 바꾸면 PageCount가 바뀔 수 있어 두 프로퍼티 변경 시 모두 확인한다.
+    private void CheckCompletion()
+    {
+        if (CurrentBook is not null && PageCount > 1 && CurrentPageNumber == PageCount)
+        {
+            _libraryService.MarkCompleted(CurrentBook.FilePath);
+            RefreshLibraryEntries();
         }
     }
 
@@ -334,9 +372,14 @@ public partial class ReaderViewModel : ObservableObject
         OnPropertyChanged(nameof(ReadingProgressText));
         _positionSaveTimer.Stop();
         _positionSaveTimer.Start();
+        CheckCompletion();
     }
 
-    partial void OnPageCountChanged(int value) => OnPropertyChanged(nameof(ReadingProgressText));
+    partial void OnPageCountChanged(int value)
+    {
+        OnPropertyChanged(nameof(ReadingProgressText));
+        CheckCompletion();
+    }
 
     partial void OnFontFamilyNameChanged(string value) => OnFormattingChanged();
 

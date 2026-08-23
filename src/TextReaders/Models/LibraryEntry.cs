@@ -14,6 +14,22 @@ public sealed class LibraryEntry
 
     public DateTime LastOpenedAt { get; set; }
 
+    public double TotalReadingSeconds { get; set; }
+
+    public bool IsCompleted { get; set; }
+
+    [JsonIgnore]
+    public string ReadingTimeDisplay
+    {
+        get
+        {
+            var totalMinutes = (int)(TotalReadingSeconds / 60);
+            return totalMinutes >= 60
+                ? $"{totalMinutes / 60}시간 {totalMinutes % 60}분"
+                : $"{totalMinutes}분";
+        }
+    }
+
     public List<Bookmark> Bookmarks { get; set; } = new();
 
     public List<Highlight> Highlights { get; set; } = new();

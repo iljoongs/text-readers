@@ -21,4 +21,8 @@ public interface ILibraryService
     IReadOnlyList<Highlight> GetHighlights(string filePath);
 
     void AddHighlight(string filePath, Highlight highlight);
+
+    void AddReadingTime(string filePath, double seconds);
+
+    void MarkCompleted(string filePath);
 }
