@@ -75,6 +75,31 @@ public partial class MainWindow : Window
 
     private void Window_PreviewKeyDown(object sender, KeyEventArgs e)
     {
+        if (Keyboard.Modifiers == ModifierKeys.Control && DataContext is ReaderViewModel viewModel)
+        {
+            switch (e.Key)
+            {
+                case Key.O:
+                    if (viewModel.OpenFileCommand.CanExecute(null))
+                    {
+                        viewModel.OpenFileCommand.Execute(null);
+                    }
+                    e.Handled = true;
+                    return;
+                case Key.S:
+                    if (viewModel.SaveCommand.CanExecute(null))
+                    {
+                        viewModel.SaveCommand.Execute(null);
+                    }
+                    e.Handled = true;
+                    return;
+                case Key.E:
+                    EditTextMenuItem_Click(this, new RoutedEventArgs());
+                    e.Handled = true;
+                    return;
+            }
+        }
+
         switch (e.Key)
         {
             case Key.Left:
