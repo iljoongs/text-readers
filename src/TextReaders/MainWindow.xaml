@@ -4,8 +4,12 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:TextReaders"
+        xmlns:views="clr-namespace:TextReaders.Views"
         mc:Ignorable="d"
         Title="text-readers" Height="720" Width="1080">
+    <Window.Resources>
+        <views:PauseResumeLabelConverter x:Key="PauseResumeLabelConverter" />
+    </Window.Resources>
     <DockPanel>
         <ToolBar DockPanel.Dock="Top">
             <Button Content="파일 열기" Command="{Binding OpenFileCommand}" Padding="8,2" />
@@ -94,6 +98,12 @@
 
             <Separator />
             <Button Content="하이라이트" Click="AddHighlightButton_Click" Padding="8,2" />
+
+            <Separator />
+            <Button Content="읽어주기" Click="PlayButton_Click" IsEnabled="{Binding CanStartReading}" Padding="8,2" />
+            <Button Content="{Binding IsPaused, Converter={StaticResource PauseResumeLabelConverter}}"
+                    Command="{Binding TogglePauseCommand}" IsEnabled="{Binding IsSpeaking}" Padding="8,2" />
+            <Button Content="정지" Command="{Binding StopReadingCommand}" IsEnabled="{Binding IsSpeaking}" Padding="8,2" />
         </ToolBar>
 
         <Grid>

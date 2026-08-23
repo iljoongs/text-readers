@@ -19,6 +19,7 @@ public partial class ReaderViewModel : ObservableObject
     private readonly ISettingsService _settingsService;
     private readonly ILibraryService _libraryService;
     private readonly IFontService _fontService;
+    private readonly ITextToSpeechService _ttsService;
     private readonly DispatcherTimer _positionSaveTimer;
     private readonly DispatcherTimer _readingTimeTimer;
     private static readonly TimeSpan ReadingTimeTickInterval = TimeSpan.FromSeconds(30);
@@ -56,6 +57,12 @@ public partial class ReaderViewModel : ObservableObject
     [ObservableProperty]
     private string _searchQuery = string.Empty;
 
+    [ObservableProperty]
+    private bool _isSpeaking;
+
+    [ObservableProperty]
+    private bool _isPaused;
+
     private int _lastSearchParagraphIndex = -1;
 
     public event Action<int>? NavigateToPageRequested;
@@ -91,12 +98,25 @@ public partial class ReaderViewModel : ObservableObject
 
     public int CompletedBookCount => LibraryEntries.Count(e => e.IsCompleted);
 
-    public ReaderViewModel(IFileService fileService, ISettingsService settingsService, ILibraryService libraryService, IFontService fontService)
+    public bool CanStartReading => !IsSpeaking;
+
+    public ReaderViewModel(IFileService fileService, ISettingsService settingsService, ILibraryService libraryService, IFontService fontService, ITextToSpeechService ttsService)
     {
         _fileService = fileService;
         _settingsService = settingsService;
         _libraryService = libraryService;
         _fontService = fontService;
+        _ttsService = ttsService;
+
+        // TTS 이벤트는 SpeechSynthesizer의 백그라운드 스레드에서 발생하므로 UI 스레드로 넘겨준다.
+        _ttsService.ParagraphStarted += paragraph =>
+            Application.Current.Dispatcher.BeginInvoke(() => NavigateToParagraphRequested?.Invoke(paragraph));
+        _ttsService.PlaybackStopped += () =>
+            Application.Current.Dispatcher.BeginInvoke(() =>
+            {
+                IsSpeaking = false;
+                IsPaused = false;
+            });
 
         var settings = _settingsService.Load();
         // 백킹 필드에 직접 대입해 생성자 초기화 중 OnXxxChanged 훅(재포맷/저장)이 돌지 않도록 한다.
@@ -152,6 +172,9 @@ public partial class ReaderViewModel : ObservableObject
 
     public void LoadBook(Book book)
     {
+        // 새 문서를 불러오면 이전 문서의 Paragraph를 가리키던 TTS 재생을 이어갈 수 없으므로 멈춘다.
+        StopReading();
+
         CurrentBook = book;
         var (document, tocEntries) = Path.GetExtension(book.FilePath).Equals(".md", StringComparison.OrdinalIgnoreCase)
             ? MarkdownFlowDocumentBuilder.Build(book.Content)
@@ -390,6 +413,49 @@ public partial class ReaderViewModel : ObservableObject
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
+
+    // 시작 문단은 현재 페이지의 페이지네이터를 가진 View 쪽(MainWindow)에서 GetPageNumber로 찾아 넘겨준다.
+    public void StartReading(IReadOnlyList<Paragraph> paragraphs, int startIndex)
+    {
+        if (paragraphs.Count == 0)
+        {
+            return;
+        }
+
+        _ttsService.Play(paragraphs, Math.Clamp(startIndex, 0, paragraphs.Count - 1));
+        IsSpeaking = true;
+        IsPaused = false;
+    }
+
+    [RelayCommand]
+    private void TogglePause()
+    {
+        if (!IsSpeaking)
+        {
+            return;
+        }
+
+        if (IsPaused)
+        {
+            _ttsService.Resume();
+            IsPaused = false;
+        }
+        else
+        {
+            _ttsService.Pause();
+            IsPaused = true;
+        }
+    }
+
+    [RelayCommand]
+    private void StopReading()
+    {
+        _ttsService.Stop();
+        IsSpeaking = false;
+        IsPaused = false;
+    }
+
+    partial void OnIsSpeakingChanged(bool value) => OnPropertyChanged(nameof(CanStartReading));
 
     partial void OnSearchQueryChanged(string value) => _lastSearchParagraphIndex = -1;
 

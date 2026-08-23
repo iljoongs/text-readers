@@ -173,6 +173,35 @@ public partial class MainWindow : Window
         viewModel.AddHighlight(paragraphIndex, startOffset, length, dialog.NoteText);
     }
 
+    // 현재 페이지에 해당하는 첫 문단을 찾아 그 문단부터 TTS 재생을 시작한다.
+    // 페이지네이터는 View(PageViewer)에만 있으므로 이 탐색은 코드비하인드에서 한다(목차/검색 이동과 동일한 패턴).
+    private void PlayButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not ReaderViewModel viewModel || PageViewer.Document is not FlowDocument document)
+        {
+            return;
+        }
+
+        var paragraphs = document.Blocks.OfType<Paragraph>().ToList();
+        if (paragraphs.Count == 0)
+        {
+            return;
+        }
+
+        var startIndex = 0;
+        if (PageViewer.Document is IDocumentPaginatorSource source &&
+            source.DocumentPaginator is DynamicDocumentPaginator paginator)
+        {
+            var found = paragraphs.FindIndex(p => paginator.GetPageNumber(p.ContentStart) + 1 >= viewModel.CurrentPageNumber);
+            if (found >= 0)
+            {
+                startIndex = found;
+            }
+        }
+
+        viewModel.StartReading(paragraphs, startIndex);
+    }
+
     private void GoToAdjacentPage(bool forward)
     {
         if (_isAnimatingPageTurn)
