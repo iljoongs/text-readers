@@ -11,18 +11,19 @@
         <views:PauseResumeLabelConverter x:Key="PauseResumeLabelConverter" />
     </Window.Resources>
     <DockPanel>
-        <Menu DockPanel.Dock="Top">
-            <MenuItem Header="☰">
-                <MenuItem Header="File">
-                    <MenuItem Header="Open" Command="{Binding OpenFileCommand}" />
-                    <MenuItem Header="Save" Command="{Binding SaveCommand}" />
-                    <MenuItem Header="Save As" Command="{Binding SaveAsCommand}" />
-                </MenuItem>
-                <MenuItem Header="Settings" Click="SettingsMenuItem_Click" />
-            </MenuItem>
-        </Menu>
-
         <ToolBar DockPanel.Dock="Top">
+            <Menu>
+                <MenuItem Header="☰">
+                    <MenuItem Header="File">
+                        <MenuItem Header="Open" Command="{Binding OpenFileCommand}" />
+                        <MenuItem Header="Save" Command="{Binding SaveCommand}" />
+                        <MenuItem Header="Save As" Command="{Binding SaveAsCommand}" />
+                    </MenuItem>
+                    <MenuItem Header="Settings" Click="SettingsMenuItem_Click" />
+                </MenuItem>
+            </Menu>
+            <Separator />
+
             <Button Content="라이브러리" Click="LibraryButton_Click" Padding="8,2" />
             <Separator />
 
