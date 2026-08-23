@@ -23,15 +23,15 @@ Phase 1(MVP) 완료 이후 순차적으로 진행할 개발 계획. 지금 단�
 
 ## Phase 4 — 확장
 
-목표: 라이브러리 관리 및 부가 기능.
+목표: 라이브러리 관리 및 부가 기능. 외부 준비물/고위험 설계 결정이 필요 없는 5개(라이브러리 관리/읽기 통계/폰트 확장/TTS/`.md` 지원)를 1차로 진행, 데이터 암호화와 클라우드 동기화는 별도 논의 예정.
 
-- **라이브러리 관리**: 여러 파일을 목록으로 관리, 표지 썸네일(자동 생성 또는 기본 이미지)
-- **읽기 통계**: 누적 독서 시간, 완독 권수 등
-- **`.md` 파일 지원**: 마크다운 렌더링 추가 검토
-- **데이터 암호화**: `System.Security.Cryptography.Aes`로 `data/*.json` → `.dat` 암호화 전환 (`architecture.md`의 "향후 암호화 계획" 참고)
-- **TTS(음성 읽기) 연동**: Windows 내장 TTS API 또는 외부 서비스 검토
-- **폰트 임베딩 확장**: 사용자가 직접 폰트 파일을 추가할 수 있는 기능
-- **클라우드 동기화**: Dropbox 연동을 통한 여러 기기 간 읽은 위치 공유
+- [x] **라이브러리 관리**: `LibraryEntry` 목록을 `LibraryWindow`(모달리스, `ReaderViewModel` 공유)에 카드형 타일로 노출. 표지는 실제 이미지 대신 제목 문자열 해시 기반 파스텔 색상의 "가짜 표지"로 생성(별도 이미지 파일 없음)
+- [x] **읽기 통계**: 30초 간격 `DispatcherTimer`로 누적 독서 시간 저장, `PageCount > 1 && CurrentPageNumber == PageCount`일 때 완독 처리. 라이브러리 창 상단에 총 독서 시간/완독 권수 합계 표시
+- [x] **`.md` 파일 지원**: Markdig로 파싱한 AST를 `MarkdownFlowDocumentBuilder`가 FlowDocument로 변환(헤딩/문단/굵게·기울임/목록/코드/인용/구분선, 표·이미지는 범위 밖). 헤딩이 그대로 목차로 등록됨. 알려진 제한: 목록 항목의 Paragraph는 `List > ListItem > Paragraph`로 한 단계 더 중첩되어 있어 `Document.Blocks.OfType<Paragraph>()` 기반 검색이 목록 항목 안의 텍스트를 찾지 못함
+- [ ] **데이터 암호화**: `System.Security.Cryptography.Aes`로 `data/*.json` → `.dat` 암호화 전환 (`architecture.md`의 "향후 암호화 계획" 참고) — 키 관리 설계가 필요해 별도 논의 예정
+- [x] **TTS(음성 읽기) 연동**: Windows 내장 `System.Speech.Synthesis`(SAPI, 오프라인) 사용. 목차/검색과 동일한 "문단 → `GetPageNumber` → 페이지 이동" 패턴을 재사용해 재생 중인 문단이 바뀔 때마다 화면이 자동으로 따라감. 재생/일시정지/재개/정지 지원
+- [x] **폰트 임베딩 확장**: `IFontService`가 내장 5종(`pack://`)과 `data/CustomFonts/`에 사용자가 추가한 폰트(파일 URI, `Fonts.GetFontFamilies`로 family name 자동 인식)를 통합 관리
+- [ ] **클라우드 동기화**: Dropbox 연동을 통한 여러 기기 간 읽은 위치 공유 — Dropbox 개발자 앱 등록 등 사용자 쪽 선행 작업이 필요해 별도 논의 예정
 
 ## 우선순위 원칙
 
