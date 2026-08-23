@@ -35,11 +35,6 @@
             <Button Content="라이브러리" Click="LibraryButton_Click" Padding="8,2" />
             <Separator />
 
-            <TextBlock Text="{Binding CurrentBook.Title}" VerticalAlignment="Center" Margin="12,0" />
-            <TextBlock Text="{Binding ReadingProgressText}" VerticalAlignment="Center" Margin="8,0" />
-        </ToolBar>
-
-        <ToolBar DockPanel.Dock="Top">
             <Button Content="북마크 추가" Command="{Binding AddBookmarkCommand}" Padding="8,2" />
             <ToggleButton x:Name="BookmarkListToggle" Content="북마크 목록 ▾" Padding="8,2" />
             <Popup PlacementTarget="{Binding ElementName=BookmarkListToggle}"
@@ -96,6 +91,10 @@
             <Button Content="{Binding IsPaused, Converter={StaticResource PauseResumeLabelConverter}}"
                     Command="{Binding TogglePauseCommand}" IsEnabled="{Binding IsSpeaking}" Padding="8,2" />
             <Button Content="정지" Command="{Binding StopReadingCommand}" IsEnabled="{Binding IsSpeaking}" Padding="8,2" />
+
+            <Separator />
+            <TextBlock Text="{Binding CurrentBook.Title}" VerticalAlignment="Center" Margin="12,0" />
+            <TextBlock Text="{Binding ReadingProgressText}" VerticalAlignment="Center" Margin="8,0" />
         </ToolBar>
 
         <Grid>
