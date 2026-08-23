@@ -74,6 +74,8 @@ public partial class ReaderViewModel : ObservableObject
 
     public ObservableCollection<TocEntry> TableOfContents { get; } = new();
 
+    public ObservableCollection<LibraryEntry> LibraryEntries { get; } = new();
+
     public ReaderViewModel(IFileService fileService, ISettingsService settingsService, ILibraryService libraryService)
     {
         _fileService = fileService;
@@ -98,6 +100,8 @@ public partial class ReaderViewModel : ObservableObject
                 _libraryService.UpdatePosition(CurrentBook.FilePath, CurrentPageNumber);
             }
         };
+
+        RefreshLibraryEntries();
     }
 
     [RelayCommand]
@@ -150,6 +154,31 @@ public partial class ReaderViewModel : ObservableObject
             Application.Current.Dispatcher.BeginInvoke(
                 () => NavigateToPageRequested?.Invoke(savedPageIndex),
                 DispatcherPriority.ContextIdle);
+        }
+
+        RefreshLibraryEntries();
+    }
+
+    [RelayCommand]
+    private void OpenLibraryEntry(LibraryEntry entry)
+    {
+        try
+        {
+            LoadBook(_fileService.LoadBook(entry.FilePath));
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"파일을 여는 중 오류가 발생했습니다.\n{ex.Message}", "text-readers",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    private void RefreshLibraryEntries()
+    {
+        LibraryEntries.Clear();
+        foreach (var entry in _libraryService.GetAllEntries())
+        {
+            LibraryEntries.Add(entry);
         }
     }
 

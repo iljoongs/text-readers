@@ -6,6 +6,8 @@ public interface ILibraryService
 {
     string? GetLastOpenedFilePath();
 
+    IReadOnlyList<LibraryEntry> GetAllEntries();
+
     int GetLastPageIndex(string filePath);
 
     void UpdatePosition(string filePath, int pageIndex);

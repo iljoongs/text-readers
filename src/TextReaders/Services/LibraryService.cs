@@ -13,6 +13,12 @@ public sealed class LibraryService : ILibraryService
         return data.LastOpenedFilePath;
     }
 
+    public IReadOnlyList<LibraryEntry> GetAllEntries()
+    {
+        var data = JsonFileStore.Load(FilePath, () => new LibraryData());
+        return data.Entries.OrderByDescending(e => e.LastOpenedAt).ToList();
+    }
+
     public int GetLastPageIndex(string filePath)
     {
         var data = JsonFileStore.Load(FilePath, () => new LibraryData());
@@ -26,6 +32,7 @@ public sealed class LibraryService : ILibraryService
         var entry = GetOrCreateEntry(data, filePath);
 
         entry.LastPageIndex = pageIndex;
+        entry.LastOpenedAt = DateTime.Now;
         data.LastOpenedFilePath = filePath;
 
         JsonFileStore.Save(FilePath, data);

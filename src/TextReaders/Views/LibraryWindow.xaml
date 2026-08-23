@@ -1,0 +1,45 @@
+<Window x:Class="TextReaders.Views.LibraryWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:local="clr-namespace:TextReaders.Views"
+        Title="라이브러리" Height="480" Width="640">
+    <Window.Resources>
+        <local:BookCardColorConverter x:Key="BookCardColorConverter" />
+    </Window.Resources>
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <ItemsControl ItemsSource="{Binding LibraryEntries}" Margin="12">
+            <ItemsControl.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+            </ItemsControl.ItemsPanel>
+            <ItemsControl.ItemTemplate>
+                <DataTemplate>
+                    <Border Width="140" Height="180" Margin="8" Cursor="Hand"
+                            Background="{Binding Title, Converter={StaticResource BookCardColorConverter}}"
+                            CornerRadius="4"
+                            MouseLeftButtonUp="LibraryEntryCard_MouseLeftButtonUp">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="6" ShadowDepth="2" Opacity="0.3" />
+                        </Border.Effect>
+                        <Grid Margin="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
+
+                            <TextBlock Grid.Row="0" Text="{Binding Title}" FontWeight="Bold" FontSize="14"
+                                       TextWrapping="Wrap" VerticalAlignment="Top" />
+                            <TextBlock Grid.Row="1" Text="{Binding LastPageIndex, StringFormat={}{0}페이지}"
+                                       FontSize="11" Opacity="0.75" />
+                            <TextBlock Grid.Row="2" Text="{Binding LastOpenedAt, StringFormat={}{0:yyyy-MM-dd}}"
+                                       FontSize="11" Opacity="0.75" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ItemsControl.ItemTemplate>
+        </ItemsControl>
+    </ScrollViewer>
+</Window>

@@ -17,6 +17,7 @@ public partial class MainWindow : Window
     private const int PageTurnAnimationMilliseconds = 280;
 
     private bool _isAnimatingPageTurn;
+    private Views.LibraryWindow? _libraryWindow;
 
     public MainWindow()
     {
@@ -91,6 +92,20 @@ public partial class MainWindow : Window
     private void PreviousPageZone_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => GoToAdjacentPage(forward: false);
 
     private void NextPageZone_MouseLeftButtonDown(object sender, MouseButtonEventArgs e) => GoToAdjacentPage(forward: true);
+
+    private void LibraryButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (_libraryWindow is null)
+        {
+            _libraryWindow = new Views.LibraryWindow { Owner = this, DataContext = DataContext };
+            _libraryWindow.Closed += (_, _) => _libraryWindow = null;
+            _libraryWindow.Show();
+        }
+        else
+        {
+            _libraryWindow.Activate();
+        }
+    }
 
     private void GoToBookmarkButton_Click(object sender, RoutedEventArgs e)
     {

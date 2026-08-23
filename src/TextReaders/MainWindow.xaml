@@ -9,6 +9,7 @@
     <DockPanel>
         <ToolBar DockPanel.Dock="Top">
             <Button Content="파일 열기" Command="{Binding OpenFileCommand}" Padding="8,2" />
+            <Button Content="라이브러리" Click="LibraryButton_Click" Padding="8,2" />
             <Separator />
 
             <TextBlock Text="글꼴" VerticalAlignment="Center" Margin="4,0" />
