@@ -32,37 +32,9 @@
             </Popup>
             <Separator />
 
-            <Button Content="파일 열기" Command="{Binding OpenFileCommand}" Padding="8,2" />
             <Button Content="라이브러리" Click="LibraryButton_Click" Padding="8,2" />
             <Separator />
 
-            <TextBlock Text="글꼴" VerticalAlignment="Center" Margin="4,0" />
-            <ComboBox Width="150" ItemsSource="{Binding AvailableFontFamilyNames}" SelectedItem="{Binding FontFamilyName}" />
-            <Button Content="+" ToolTip="폰트 추가" Command="{Binding AddCustomFontCommand}" Padding="6,2" Margin="2,0,0,0" />
-
-            <Separator />
-            <TextBlock Text="크기" VerticalAlignment="Center" Margin="4,0" />
-            <Slider Width="90" Minimum="12" Maximum="32" Value="{Binding FontSize}" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding FontSize, StringFormat={}{0:0}pt}" VerticalAlignment="Center" Width="34" />
-
-            <Separator />
-            <TextBlock Text="줄간격" VerticalAlignment="Center" Margin="4,0" />
-            <Slider Width="90" Minimum="1.0" Maximum="2.0" Value="{Binding LineSpacingMultiplier}" VerticalAlignment="Center" />
-            <TextBlock Text="{Binding LineSpacingMultiplier, StringFormat={}{0:0.0}x}" VerticalAlignment="Center" Width="34" />
-
-            <Separator />
-            <TextBlock Text="여백" VerticalAlignment="Center" Margin="4,0" />
-            <ComboBox Width="80" ItemsSource="{Binding MarginPresetOptions}" SelectedItem="{Binding MarginPreset}" />
-
-            <Separator />
-            <TextBlock Text="테마" VerticalAlignment="Center" Margin="4,0" />
-            <ComboBox Width="80" ItemsSource="{Binding ThemeOptions}" SelectedItem="{Binding Theme}" />
-
-            <Separator />
-            <TextBlock Text="밝기" VerticalAlignment="Center" Margin="4,0" />
-            <Slider Width="90" Minimum="0" Maximum="0.7" Value="{Binding DimmingOpacity}" VerticalAlignment="Center" />
-
-            <Separator />
             <TextBlock Text="{Binding CurrentBook.Title}" VerticalAlignment="Center" Margin="12,0" />
             <TextBlock Text="{Binding ReadingProgressText}" VerticalAlignment="Center" Margin="8,0" />
         </ToolBar>
