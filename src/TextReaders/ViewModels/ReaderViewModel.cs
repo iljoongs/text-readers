@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Documents;
@@ -152,7 +153,9 @@ public partial class ReaderViewModel : ObservableObject
     public void LoadBook(Book book)
     {
         CurrentBook = book;
-        var (document, tocEntries) = BuildFlowDocument(book.Content);
+        var (document, tocEntries) = Path.GetExtension(book.FilePath).Equals(".md", StringComparison.OrdinalIgnoreCase)
+            ? MarkdownFlowDocumentBuilder.Build(book.Content)
+            : BuildFlowDocument(book.Content);
         Document = document;
         ApplyDocumentFormatting();
 

@@ -17,7 +17,7 @@ public sealed class FileService : IFileService
     {
         var dialog = new OpenFileDialog
         {
-            Filter = "텍스트 파일 (*.txt)|*.txt",
+            Filter = "지원 파일 (*.txt;*.md)|*.txt;*.md|텍스트 파일 (*.txt)|*.txt|마크다운 파일 (*.md)|*.md",
             CheckFileExists = true,
         };
 
