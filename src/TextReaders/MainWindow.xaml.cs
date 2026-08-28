@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Animation;
 using System.Windows.Media.Imaging;
+using System.Text.RegularExpressions;
 using TextReaders.Models;
 using TextReaders.ViewModels;
 
@@ -155,11 +156,50 @@ public partial class MainWindow : Window
             return;
         }
 
-        var dialog = new Views.TextEditWindow(viewModel.CurrentBook.Content) { Owner = this };
+        var scrollToIndex = FindCurrentPageContentOffset(viewModel);
+        var dialog = new Views.TextEditWindow(viewModel.CurrentBook.Content, scrollToIndex) { Owner = this };
         if (dialog.ShowDialog() == true)
         {
             viewModel.UpdateContent(dialog.EditedText);
         }
+    }
+
+    // 편집 창이 열릴 때 지금 읽던 페이지 근처로 스크롤되도록, 원문(CurrentBook.Content)에서
+    // 그 위치에 해당하는 대략적인 글자 인덱스를 구한다.
+    // 일반 텍스트는 현재 페이지 첫 문단의 앞부분을 원문에서 그대로 찾아 정확히 맞출 수 있지만,
+    // 마크다운은 렌더링된 문단 텍스트가 **/# 같은 원문 문법 기호를 제거한 상태라 그대로 찾을 수
+    // 없으므로, 그 경우와 찾기에 실패한 경우엔 "현재 페이지 / 전체 페이지" 비율로 근사한다.
+    private int FindCurrentPageContentOffset(ReaderViewModel viewModel)
+    {
+        var content = viewModel.CurrentBook!.Content;
+
+        if (!viewModel.CurrentBook.IsMarkdown &&
+            PageViewer.Document is FlowDocument document &&
+            PageViewer.Document is IDocumentPaginatorSource source &&
+            source.DocumentPaginator is DynamicDocumentPaginator paginator)
+        {
+            var paragraphs = document.Blocks.OfType<Paragraph>().ToList();
+            var index = paragraphs.FindIndex(p => paginator.GetPageNumber(p.ContentStart) + 1 >= viewModel.CurrentPageNumber);
+            if (index >= 0)
+            {
+                var paragraphText = new TextRange(paragraphs[index].ContentStart, paragraphs[index].ContentEnd).Text;
+                var words = paragraphText.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(6);
+                var pattern = string.Join(@"\s+", words.Select(Regex.Escape));
+                if (pattern.Length > 0)
+                {
+                    // 문단을 만들 때 줄바꿈을 공백으로 바꿨으므로, 공백을 느슨하게 매칭해 원문에서 찾는다.
+                    var match = Regex.Match(content, pattern);
+                    if (match.Success)
+                    {
+                        return match.Index;
+                    }
+                }
+            }
+        }
+
+        return viewModel.PageCount > 0
+            ? (int)(content.Length * (viewModel.CurrentPageNumber - 1) / (double)viewModel.PageCount)
+            : 0;
     }
 
     private void EditTitleMenuItem_Click(object sender, RoutedEventArgs e)
