@@ -11,7 +11,8 @@ text-readers/
 ├── .gitignore
 ├── data/                          # 실행 시 생성/사용되는 로컬 데이터
 │   ├── settings.json               # 폰트, 여백, 테마 등 사용자 설정
-│   └── library.json                # 열었던 파일 목록, 마지막 읽은 위치
+│   ├── library.json                # 열었던 파일 목록, 마지막 읽은 위치
+│   └── Books/                      # BookStorageService가 생성하는 .mybook(ZIP) 파일 + index.json
 ├── doc/
 │   ├── architecture.md
 │   ├── mvp-spec.md
@@ -64,6 +65,15 @@ Encoding encoding = result.Detected?.Encoding ?? Encoding.UTF8;
 - 저장 위치: 실행 폴더 기준 `./data/*.json`
 - 저장 시점: 설정 변경 시, 페이지 이동 시(마지막 읽은 위치), 앱 종료 시
 - **향후 암호화 계획**: `System.Security.Cryptography.Aes`로 JSON 텍스트를 암호화하여 `.dat` 확장자로 저장하는 방식으로 전환 예정 (Phase 4, `doc/roadmap.md` 참고). 지금 단계에서는 평문 JSON으로 충분하며, 저장 구조 설계 시 "직렬화 대상 객체"와 "파일 I/O 로직"을 분리해 두어야 나중에 암호화 레이어만 끼워 넣기 쉽다.
+
+### 책 콘텐츠 저장: 표준 ZIP(`.mybook`)
+
+- `Services/BookStorageService.cs` (+ `IBookStorageService`) — 책 본문 텍스트를 표준 ZIP 컨테이너로 저장/로드하는 독립 모듈. 아직 ViewModel/UI에는 연결되지 않은 저수준 저장 포맷 기능이다.
+- 압축은 `System.IO.Compression.ZipArchive`만 사용(독자 포맷 없음) → 확장자를 `.zip`으로 바꾸면 일반 압축 프로그램에서 그대로 열람 가능
+- 파일명: 본문(UTF-8) SHA256 해시값 앞 32자(hex, 소문자) + `.mybook` 확장자, 저장 위치는 `data/Books/`
+- ZIP 내부 구성: `content.txt`(본문, UTF-8, Deflate) + `metadata.json`(title/author/addedAt/sha256)
+- 외부 인덱스: `data/Books/index.json`에 `해시 → { title, author, addedAt }` 매핑 유지, 저장/삭제 시 함께 갱신
+- 암호화는 적용하지 않음 (평문 ZIP)
 
 ## 폰트 임베딩 방식
 

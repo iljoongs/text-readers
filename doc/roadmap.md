@@ -32,6 +32,7 @@ Phase 1(MVP) 완료 이후 순차적으로 진행할 개발 계획. 지금 단�
 - [x] **TTS(음성 읽기) 연동**: Windows 내장 `System.Speech.Synthesis`(SAPI, 오프라인) 사용. 목차/검색과 동일한 "문단 → `GetPageNumber` → 페이지 이동" 패턴을 재사용해 재생 중인 문단이 바뀔 때마다 화면이 자동으로 따라감. 재생/일시정지/재개/정지 지원
 - [x] **폰트 임베딩 확장**: `IFontService`가 내장 5종(`pack://`)과 `data/CustomFonts/`에 사용자가 추가한 폰트(파일 URI, `Fonts.GetFontFamilies`로 family name 자동 인식)를 통합 관리
 - [ ] **클라우드 동기화**: Dropbox 연동을 통한 여러 기기 간 읽은 위치 공유 — Dropbox 개발자 앱 등록 등 사용자 쪽 선행 작업이 필요해 별도 논의 예정
+- [x] **책 콘텐츠 저장 포맷(`.mybook`)**: `BookStorageService`로 본문을 표준 ZIP(`content.txt` + `metadata.json`)에 저장, 파일명은 SHA256 해시 앞 32자 + `.mybook`, `data/Books/index.json`으로 별도 인덱싱(`architecture.md`의 "책 콘텐츠 저장" 참고). 저장/로드 모듈만 구현된 상태이며 `ReaderViewModel`/UI 연결은 아직 범위 밖(추후 논의)
 
 ## 우선순위 원칙
 
