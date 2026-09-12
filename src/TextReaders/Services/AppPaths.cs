@@ -65,6 +65,22 @@ public static class AppPaths
         return target;
     }
 
+    // 기본 폴더(DefaultDataDirectory)의 데이터를 현재 데이터 폴더로 복사한다. 기본 폴더는 그대로 남겨두고,
+    // 겹치는 파일은 기본 폴더 쪽 내용으로 덮어쓴다. 현재 폴더가 이미 기본 폴더거나 기본 폴더가 없으면 아무 일도 하지 않는다.
+    public static void CopyDefaultDataToCurrentDirectory()
+    {
+        var current = Path.GetFullPath(DataDirectory);
+        var defaultDir = Path.GetFullPath(DefaultDataDirectory);
+
+        if (string.Equals(current, defaultDir, StringComparison.OrdinalIgnoreCase) || !Directory.Exists(defaultDir))
+        {
+            return;
+        }
+
+        Directory.CreateDirectory(current);
+        CopyDirectoryRecursive(defaultDir, current);
+    }
+
     private static bool IsSameOrSubPath(string basePath, string candidate)
     {
         var baseWithSeparator = basePath.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar;

@@ -72,6 +72,7 @@ Encoding encoding = result.Detected?.Encoding ?? Encoding.UTF8;
 - 현재 데이터 폴더 위치를 가리키는 포인터는 데이터 폴더 "밖", 즉 실행 파일 옆의 `data-location.json`에 저장한다(데이터 폴더 안에 포인터를 두면 "포인터를 읽으려면 먼저 폴더 위치를 알아야 하는" 순환 문제가 생기기 때문). 포인터 파일이 없거나 값이 비어 있으면 기본값(`AppContext.BaseDirectory\data`)을 사용
 - `AppPaths.ChangeDataDirectory(newDirectory)`: 기존 데이터 폴더의 모든 내용을 새 폴더로 복사한 뒤 기존 폴더를 삭제하고 포인터를 갱신한다. 새 경로가 기본값이면 포인터 값은 `null`로 저장(=기본값 사용). 새 경로가 현재 폴더 내부의 하위 경로면 예외를 던져 자기 자신 밑으로 이동하는 것을 막는다
 - 설정 화면(`Views/SettingsWindow.xaml`)의 "데이터 폴더" 섹션에서 `찾아보기...`(`Microsoft.Win32.OpenFolderDialog`로 폴더 선택) / `기본`(기본 위치로 복귀) 두 버튼으로 조작. `ReaderViewModel`의 `BrowseDataDirectoryCommand`/`ResetDataDirectoryCommand`가 처리하며, 이동 후 `IFontService.RescanCustomFonts()`를 호출해 새 위치의 사용자 폰트 목록을 다시 읽는다
+- `기본 폴더 데이터 복사` 버튼(`CopyDefaultDataCommand`) — `AppPaths.CopyDefaultDataToCurrentDirectory()`로 기본 폴더(`DefaultDataDirectory`)의 데이터를 "현재" 데이터 폴더로 복사(병합)한다. `ChangeDataDirectory`(이동)와 달리 기본 폴더는 그대로 남고, 겹치는 파일만 기본 폴더 쪽 내용으로 덮어쓰며 현재 폴더에만 있던 파일은 유지한다. 이미 기본 폴더를 사용 중이면 아무 것도 하지 않음(안내 메시지만 표시)
 
 ### 책 콘텐츠 저장: 표준 ZIP(`.mybook`)
 

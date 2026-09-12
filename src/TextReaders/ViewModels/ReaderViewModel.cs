@@ -633,6 +633,30 @@ public partial class ReaderViewModel : ObservableObject
     [RelayCommand]
     private void ResetDataDirectory() => ChangeDataDirectory(null);
 
+    [RelayCommand]
+    private void CopyDefaultData()
+    {
+        if (IsDefaultDataDirectory)
+        {
+            MessageBox.Show("이미 기본 폴더를 사용 중입니다.", "text-readers", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            AppPaths.CopyDefaultDataToCurrentDirectory();
+            _fontService.RescanCustomFonts();
+            OnPropertyChanged(nameof(AvailableFontFamilyNames));
+
+            MessageBox.Show("기본 폴더의 데이터를 현재 데이터 폴더로 복사했습니다.", "text-readers", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"기본 폴더 데이터를 복사하는 중 오류가 발생했습니다.\n{ex.Message}", "text-readers",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void ChangeDataDirectory(string? newDirectory)
     {
         try
