@@ -227,6 +227,32 @@ public partial class MainWindow : Window
         }
     }
 
+    private void SaveMyBookAsMenuItem_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is not ReaderViewModel viewModel || viewModel.CurrentBook is null)
+        {
+            MessageBox.Show("먼저 책을 열어주세요.", "text-readers", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var dialog = new Views.MyBookSaveDialog(viewModel.CurrentBook.Title, string.Empty) { Owner = this };
+        if (dialog.ShowDialog() != true)
+        {
+            return;
+        }
+
+        try
+        {
+            viewModel.SaveCurrentAsMyBook(dialog.BookTitle, dialog.Author);
+            MessageBox.Show("mybook으로 저장했습니다.", "text-readers", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"mybook으로 저장하는 중 오류가 발생했습니다.\n{ex.Message}", "text-readers",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     private void GoToBookmarkButton_Click(object sender, RoutedEventArgs e)
     {
         if (DataContext is ReaderViewModel viewModel && ((FrameworkElement)sender).DataContext is Bookmark bookmark)

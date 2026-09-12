@@ -21,8 +21,9 @@ public partial class App : Application
         IFontService fontService = new FontService();
         ITextToSpeechService ttsService = new TextToSpeechService();
         IBundleService bundleService = new BundleService();
+        IBookStorageService bookStorageService = new BookStorageService();
 
-        var readerViewModel = new ReaderViewModel(fileService, settingsService, libraryService, fontService, ttsService, bundleService);
+        var readerViewModel = new ReaderViewModel(fileService, settingsService, libraryService, fontService, ttsService, bundleService, bookStorageService);
 
         var lastOpenedFilePath = libraryService.GetLastOpenedFilePath();
         if (lastOpenedFilePath is not null && File.Exists(lastOpenedFilePath))

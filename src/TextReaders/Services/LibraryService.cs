@@ -139,6 +139,17 @@ public sealed class LibraryService : ILibraryService
         JsonFileStore.Save(FilePath, data);
     }
 
+    // mybook은 파일명이 해시라 표시용 제목을 따로 들고 있어야 한다(Title 계산 프로퍼티 참고).
+    public void SetDisplayTitle(string filePath, string? displayTitle)
+    {
+        var data = JsonFileStore.Load(FilePath, () => new LibraryData());
+        var entry = GetOrCreateEntry(data, filePath);
+
+        entry.DisplayTitle = displayTitle;
+
+        JsonFileStore.Save(FilePath, data);
+    }
+
     private static LibraryEntry GetOrCreateEntry(LibraryData data, string filePath)
     {
         var entry = data.Entries.FirstOrDefault(e => e.FilePath == filePath);

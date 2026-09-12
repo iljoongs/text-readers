@@ -21,6 +21,7 @@ public partial class ReaderViewModel : ObservableObject
     private readonly IFontService _fontService;
     private readonly ITextToSpeechService _ttsService;
     private readonly IBundleService _bundleService;
+    private readonly IBookStorageService _bookStorageService;
     private readonly DispatcherTimer _positionSaveTimer;
     private readonly DispatcherTimer _readingTimeTimer;
     private static readonly TimeSpan ReadingTimeTickInterval = TimeSpan.FromSeconds(30);
@@ -63,6 +64,9 @@ public partial class ReaderViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isPaused;
+
+    [ObservableProperty]
+    private LibraryEntry? _selectedLibraryEntry;
 
     private int _lastSearchParagraphIndex = -1;
 
@@ -109,7 +113,7 @@ public partial class ReaderViewModel : ObservableObject
 
     public bool CanStartReading => !IsSpeaking;
 
-    public ReaderViewModel(IFileService fileService, ISettingsService settingsService, ILibraryService libraryService, IFontService fontService, ITextToSpeechService ttsService, IBundleService bundleService)
+    public ReaderViewModel(IFileService fileService, ISettingsService settingsService, ILibraryService libraryService, IFontService fontService, ITextToSpeechService ttsService, IBundleService bundleService, IBookStorageService bookStorageService)
     {
         _fileService = fileService;
         _settingsService = settingsService;
@@ -117,6 +121,7 @@ public partial class ReaderViewModel : ObservableObject
         _fontService = fontService;
         _ttsService = ttsService;
         _bundleService = bundleService;
+        _bookStorageService = bookStorageService;
 
         // TTS 이벤트는 SpeechSynthesizer의 백그라운드 스레드에서 발생하므로 UI 스레드로 넘겨준다.
         _ttsService.ParagraphStarted += paragraph =>
@@ -180,18 +185,180 @@ public partial class ReaderViewModel : ObservableObject
         }
     }
 
-    // 확장자가 .json이면 번들, 그 외에는 일반 txt/md로 취급한다.
+    // 확장자가 .json이면 번들, .mybook이면 표준 ZIP 책 파일, 그 외에는 일반 txt/md로 취급한다.
     // OpenFile/라이브러리 항목 열기/마지막 세션 복원 세 경로가 모두 이 메서드를 거친다.
     public void OpenPath(string filePath)
     {
-        if (Path.GetExtension(filePath).Equals(".json", StringComparison.OrdinalIgnoreCase))
+        var extension = Path.GetExtension(filePath);
+        if (extension.Equals(".json", StringComparison.OrdinalIgnoreCase))
         {
             OpenBundle(filePath);
+        }
+        else if (extension.Equals(".mybook", StringComparison.OrdinalIgnoreCase))
+        {
+            OpenMyBookPath(filePath);
         }
         else
         {
             LoadBook(_fileService.LoadBook(filePath));
         }
+    }
+
+    private static bool IsMyBookPath(string filePath) =>
+        Path.GetExtension(filePath).Equals(".mybook", StringComparison.OrdinalIgnoreCase);
+
+    [RelayCommand]
+    private void OpenMyBook()
+    {
+        try
+        {
+            var path = _bookStorageService.ShowOpenFileDialog();
+            if (path is not null)
+            {
+                OpenPath(path);
+            }
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"mybook 파일을 여는 중 오류가 발생했습니다.\n{ex.Message}", "text-readers",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    // 라이브러리 항목의 제목은 파일명에서 못 뽑으므로(파일명이 해시), 인덱스에서 실제 제목을 찾아
+    // DisplayTitle로 심어둔다 - 열 때마다 갱신되므로 다른 곳에서 저장된 mybook도 열면 제목이 맞춰진다.
+    private void OpenMyBookPath(string filePath)
+    {
+        var content = _bookStorageService.LoadBook(filePath);
+        var hash = Path.GetFileNameWithoutExtension(filePath);
+        var title = _bookStorageService.GetIndex().TryGetValue(hash, out var indexEntry)
+            ? indexEntry.Title
+            : hash;
+
+        _libraryService.SetDisplayTitle(filePath, title);
+
+        LoadBook(new Book
+        {
+            FilePath = filePath,
+            Title = title,
+            Content = content,
+            IsMarkdown = false,
+        });
+    }
+
+    // 현재 책의 내용을 새 .mybook 파일로 저장한다(비파괴적: 원본 항목은 그대로 두고 별도 항목을 추가).
+    public void SaveCurrentAsMyBook(string title, string author)
+    {
+        if (CurrentBook is null)
+        {
+            return;
+        }
+
+        var highlights = _libraryService.GetHighlights(CurrentBook.FilePath).ToList();
+        SaveAsMyBookAndTrack(CurrentBook.Content, title, author, Bookmarks.ToList(), highlights, CurrentPageNumber);
+    }
+
+    [RelayCommand]
+    private void SaveAsMyBook()
+    {
+        if (CurrentBook is null)
+        {
+            MessageBox.Show("먼저 책을 열어주세요.", "text-readers", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            SaveCurrentAsMyBook(CurrentBook.Title, string.Empty);
+            MessageBox.Show("mybook으로 저장했습니다.", "text-readers", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"mybook으로 저장하는 중 오류가 발생했습니다.\n{ex.Message}", "text-readers",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [RelayCommand]
+    private void SaveLibraryEntryAsMyBook(LibraryEntry entry)
+    {
+        try
+        {
+            if (entry.IsMyBook)
+            {
+                MessageBox.Show("이미 mybook 형식입니다.", "text-readers", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var content = ReadEntryContent(entry);
+            SaveAsMyBookAndTrack(content, entry.Title, string.Empty, entry.Bookmarks, entry.Highlights, entry.LastPageIndex);
+
+            MessageBox.Show("mybook으로 저장했습니다.", "text-readers", MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"mybook으로 저장하는 중 오류가 발생했습니다.\n{ex.Message}", "text-readers",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    // 기존 항목은 그대로 두고, 같은 내용을 새 .mybook 파일로도 저장해 라이브러리에 별도 항목으로 추가한다.
+    private void SaveAsMyBookAndTrack(string content, string title, string author,
+        IReadOnlyList<Bookmark> bookmarks, IReadOnlyList<Highlight> highlights, int lastPageIndex)
+    {
+        var savedPath = _bookStorageService.SaveBook(content, title, author);
+
+        _libraryService.ImportEntry(savedPath, bookmarks, highlights, lastPageIndex);
+        _libraryService.SetDisplayTitle(savedPath, title);
+
+        RefreshLibraryEntries();
+    }
+
+    [RelayCommand]
+    private void ConvertLibraryEntryToMyBook(LibraryEntry entry)
+    {
+        try
+        {
+            if (entry.IsMyBook)
+            {
+                MessageBox.Show("이미 mybook 형식입니다.", "text-readers", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+
+            var oldFilePath = entry.FilePath;
+            var content = ReadEntryContent(entry);
+            var savedPath = _bookStorageService.SaveBook(content, entry.Title, string.Empty);
+
+            // 원본 파일은 그대로 두고(요구사항), 같은 라이브러리 항목이 새 mybook 파일을 가리키도록
+            // FilePath만 옮긴다 - 북마크/하이라이트/마지막 페이지는 같은 레코드에 실려 있어 그대로 유지된다.
+            _libraryService.RenameEntry(oldFilePath, savedPath);
+            _libraryService.SetDisplayTitle(savedPath, entry.Title);
+
+            if (CurrentBook?.FilePath == oldFilePath)
+            {
+                OpenMyBookPath(savedPath);
+            }
+
+            RefreshLibraryEntries();
+            MessageBox.Show("mybook으로 변경했습니다. (원본 파일은 그대로 유지됩니다)", "text-readers",
+                MessageBoxButton.OK, MessageBoxImage.Information);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"mybook으로 변경하는 중 오류가 발생했습니다.\n{ex.Message}", "text-readers",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    // mybook/번들이 아닌 라이브러리 항목(txt/md)의 원문을 읽어온다.
+    private string ReadEntryContent(LibraryEntry entry)
+    {
+        if (Path.GetExtension(entry.FilePath).Equals(".json", StringComparison.OrdinalIgnoreCase))
+        {
+            return _bundleService.Load(entry.FilePath).Content;
+        }
+
+        return _fileService.LoadBook(entry.FilePath).Content;
     }
 
     private void OpenBundle(string filePath)
@@ -360,10 +527,39 @@ public partial class ReaderViewModel : ObservableObject
         {
             SaveBundleTo(_currentBundlePath);
         }
+        else if (IsMyBookPath(CurrentBook.FilePath))
+        {
+            SaveMyBookContentInPlace();
+        }
         else
         {
             File.WriteAllText(CurrentBook.FilePath, newContent);
         }
+    }
+
+    // mybook은 파일명이 내용의 해시라 "제자리 덮어쓰기"가 불가능하다 - 내용이 바뀌면 새 해시 파일이
+    // 생기므로, 그 파일로 라이브러리 항목을 옮기고(북마크/하이라이트/위치는 그대로 유지) CurrentBook도
+    // 새 경로를 가리키게 한다. 이전 해시 파일은 지우지 않는다(다른 곳에서 참조 중일 수 있어 안전하게 둠).
+    private void SaveMyBookContentInPlace()
+    {
+        var oldFilePath = CurrentBook!.FilePath;
+        var savedPath = _bookStorageService.SaveBook(CurrentBook.Content, CurrentBook.Title, string.Empty);
+
+        if (string.Equals(savedPath, oldFilePath, StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
+        _libraryService.RenameEntry(oldFilePath, savedPath);
+        _libraryService.SetDisplayTitle(savedPath, CurrentBook.Title);
+
+        CurrentBook = new Book
+        {
+            FilePath = savedPath,
+            Title = CurrentBook.Title,
+            Content = CurrentBook.Content,
+            IsMarkdown = CurrentBook.IsMarkdown,
+        };
     }
 
     // Text > Edit Title. 제목은 파일 이름에서 그대로 가져오는 값이라, 제목을 바꾸는 것은
@@ -378,6 +574,21 @@ public partial class ReaderViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(newTitle))
         {
             throw new ArgumentException("제목을 입력해주세요.");
+        }
+
+        // mybook은 파일명이 내용의 해시라 제목과 무관하다 - 실제 파일은 그대로 두고 표시용 제목만 바꾼다.
+        if (IsMyBookPath(CurrentBook.FilePath))
+        {
+            _libraryService.SetDisplayTitle(CurrentBook.FilePath, newTitle);
+            CurrentBook = new Book
+            {
+                FilePath = CurrentBook.FilePath,
+                Title = newTitle,
+                Content = CurrentBook.Content,
+                IsMarkdown = CurrentBook.IsMarkdown,
+            };
+            RefreshLibraryEntries();
+            return;
         }
 
         if (newTitle.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0)

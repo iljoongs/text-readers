@@ -76,12 +76,22 @@ Encoding encoding = result.Detected?.Encoding ?? Encoding.UTF8;
 
 ### 책 콘텐츠 저장: 표준 ZIP(`.mybook`)
 
-- `Services/BookStorageService.cs` (+ `IBookStorageService`) — 책 본문 텍스트를 표준 ZIP 컨테이너로 저장/로드하는 독립 모듈. 아직 ViewModel/UI에는 연결되지 않은 저수준 저장 포맷 기능이다.
+- `Services/BookStorageService.cs` (+ `IBookStorageService`) — 책 본문 텍스트를 표준 ZIP 컨테이너로 저장/로드하는 저수준 저장 포맷 모듈. `ReaderViewModel`/File 메뉴/라이브러리 창에 연결되어 있다(아래 "mybook과 File 메뉴/라이브러리 연동" 참고).
 - 압축은 `System.IO.Compression.ZipArchive`만 사용(독자 포맷 없음) → 확장자를 `.zip`으로 바꾸면 일반 압축 프로그램에서 그대로 열람 가능
-- 파일명: 본문(UTF-8) SHA256 해시값 앞 32자(hex, 소문자) + `.mybook` 확장자, 저장 위치는 `data/Books/`
+- 파일명: 본문(UTF-8) SHA256 해시값 앞 32자(hex, 소문자) + `.mybook` 확장자, 저장 위치는 `data/Books/` — **내용이 바뀌면 해시도 바뀌므로 파일명이 곧 콘텐츠 버전**이다(경로 기반이 아닌 내용 기반 저장)
 - ZIP 내부 구성: `content.txt`(본문, UTF-8, Deflate) + `metadata.json`(title/author/addedAt/sha256)
 - 외부 인덱스: `data/Books/index.json`에 `해시 → { title, author, addedAt }` 매핑 유지, 저장/삭제 시 함께 갱신
 - 암호화는 적용하지 않음 (평문 ZIP)
+
+### mybook과 File 메뉴/라이브러리 연동
+
+- **File 메뉴**: `Open MyBook`(`OpenMyBookCommand`, `.mybook` 필터 다이얼로그 → `ReaderViewModel.OpenPath`가 확장자로 분기), `Save as MyBook`(`SaveAsMyBookCommand`, 현재 책 제목으로 즉시 저장), `Save MyBook As...`(코드비하인드에서 `Views/MyBookSaveDialog`로 제목/저자를 물어본 뒤 저장) 세 항목을 `.json` 번들 Open/Save/Save As 아래에 추가했다. `ReaderViewModel.OpenPath`는 `.json`(번들) / `.mybook` / 그 외(txt·md) 세 갈래로 분기한다.
+- **저장은 비파괴적**: `SaveCurrentAsMyBook`(File 메뉴)과 `SaveLibraryEntryAsMyBookCommand`(라이브러리 카드 오른쪽 클릭 메뉴 "mybook으로 저장")는 원본 항목을 그대로 두고 새 `.mybook` 파일을 만들어 라이브러리에 **별도 항목**으로 추가한다(북마크/하이라이트/마지막 페이지는 `ILibraryService.ImportEntry`로 그대로 옮겨 심음).
+- **변경은 항목 자체를 이전**: 라이브러리 카드 오른쪽 클릭 메뉴 "mybook으로 변경"(`ConvertLibraryEntryToMyBookCommand`)은 같은 `LibraryEntry` 레코드의 `FilePath`만 새 `.mybook` 파일로 옮긴다(`ILibraryService.RenameEntry` 재사용) — **요구사항에 따라 원본 파일은 삭제하지 않고 그대로 둔 채 라이브러리 항목만 옮겨간다.**
+- **제목 표시**: `.mybook`은 파일명이 해시라 파일명에서 제목을 뽑을 수 없다 - `Models/LibraryEntry.DisplayTitle`(신규 필드)에 실제 제목을 저장해두고 `Title` 프로퍼티가 `DisplayTitle ?? 파일명`으로 계산된다. mybook을 열 때마다(`OpenMyBookPath`) 인덱스에서 제목을 다시 읽어 `DisplayTitle`을 갱신한다.
+- **형식 배지**: `LibraryEntry.IsMyBook`/`IsTextFormat`/`FormatBadge` 계산 프로퍼티로 mybook은 기본 카드 모습 그대로, 그 외 형식(txt/md/json)은 카드 우상단에 확장자 배지(`TXT`/`MD`/`JSON`)를 표시한다(`Views/LibraryWindow.xaml`).
+- **카드 선택/더블클릭**: 라이브러리 창을 `ItemsControl`에서 `ListBox`(`SelectionMode="Single"`)로 바꿔 한 번 클릭은 카드 선택(테두리 강조), 더블클릭(`MouseLeftButtonDown` + `e.ClickCount == 2`)만 책을 연다. 오른쪽 클릭도 그 카드를 선택 상태로 만든 뒤(`PreviewMouseRightButtonDown`) 팝업 메뉴("mybook으로 저장"/"mybook으로 변경")를 띄운다.
+- **mybook 특성으로 인한 기존 기능 보정**: `.mybook`은 파일명이 해시라 (1) `Text > Edit`로 내용을 바꾸면 해시가 바뀌므로 `UpdateContent`가 제자리 덮어쓰기 대신 새 해시 파일을 만들고 라이브러리 항목을 그 파일로 옮긴다(이전 해시 파일은 삭제하지 않음), (2) `Text > Edit Title`은 실제 파일을 rename하는 대신(해시가 제목과 무관하므로) `DisplayTitle`만 갱신한다(`RenameCurrentFile`의 mybook 분기).
 
 ## 폰트 임베딩 방식
 

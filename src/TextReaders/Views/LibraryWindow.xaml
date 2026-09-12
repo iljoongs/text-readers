@@ -6,6 +6,7 @@
     <Window.Resources>
         <local:BookCardColorConverter x:Key="BookCardColorConverter" />
         <local:CompletedToLabelConverter x:Key="CompletedToLabelConverter" />
+        <BooleanToVisibilityConverter x:Key="BoolToVisibilityConverter" />
     </Window.Resources>
 
     <DockPanel>
@@ -19,21 +20,55 @@
         </Border>
 
         <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <ItemsControl ItemsSource="{Binding LibraryEntries}" Margin="12">
-                <ItemsControl.ItemsPanel>
+            <!-- 한 번 클릭은 선택만, 더블클릭으로 열기(카드 코드비하인드에서 ClickCount로 구분). -->
+            <ListBox ItemsSource="{Binding LibraryEntries}"
+                     SelectedItem="{Binding SelectedLibraryEntry}"
+                     SelectionMode="Single"
+                     Background="Transparent" BorderThickness="0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                     Margin="12">
+                <ListBox.ItemsPanel>
                     <ItemsPanelTemplate>
                         <WrapPanel Orientation="Horizontal" />
                     </ItemsPanelTemplate>
-                </ItemsControl.ItemsPanel>
-                <ItemsControl.ItemTemplate>
+                </ListBox.ItemsPanel>
+                <ListBox.ItemContainerStyle>
+                    <Style TargetType="ListBoxItem">
+                        <Setter Property="Padding" Value="0" />
+                        <Setter Property="Margin" Value="0" />
+                        <Setter Property="Template">
+                            <Setter.Value>
+                                <ControlTemplate TargetType="ListBoxItem">
+                                    <Border x:Name="SelectionBorder" Margin="6" Padding="2" CornerRadius="6"
+                                            BorderThickness="2" BorderBrush="Transparent">
+                                        <ContentPresenter />
+                                    </Border>
+                                    <ControlTemplate.Triggers>
+                                        <Trigger Property="IsSelected" Value="True">
+                                            <Setter TargetName="SelectionBorder" Property="BorderBrush" Value="#4A90D9" />
+                                        </Trigger>
+                                    </ControlTemplate.Triggers>
+                                </ControlTemplate>
+                            </Setter.Value>
+                        </Setter>
+                    </Style>
+                </ListBox.ItemContainerStyle>
+                <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Border Width="140" Height="190" Margin="8" Cursor="Hand"
+                        <Border Width="140" Height="190" Cursor="Hand"
                                 Background="{Binding Title, Converter={StaticResource BookCardColorConverter}}"
                                 CornerRadius="4"
-                                MouseLeftButtonUp="LibraryEntryCard_MouseLeftButtonUp">
+                                MouseLeftButtonDown="LibraryEntryCard_MouseLeftButtonDown"
+                                PreviewMouseRightButtonDown="LibraryEntryCard_PreviewMouseRightButtonDown">
                             <Border.Effect>
                                 <DropShadowEffect BlurRadius="6" ShadowDepth="2" Opacity="0.3" />
                             </Border.Effect>
+                            <Border.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="mybook으로 저장" Click="SaveAsMyBookMenuItem_Click" />
+                                    <MenuItem Header="mybook으로 변경" Click="ConvertToMyBookMenuItem_Click" />
+                                </ContextMenu>
+                            </Border.ContextMenu>
                             <Grid Margin="10">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="*" />
@@ -42,8 +77,15 @@
                                     <RowDefinition Height="Auto" />
                                 </Grid.RowDefinitions>
 
+                                <!-- mybook은 "기본" 형식이라 별도 표시가 없고, txt/md/json처럼 다른 형식만 배지로 구분한다. -->
+                                <Border Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                        Background="#B0000000" CornerRadius="3" Padding="4,1"
+                                        Visibility="{Binding IsTextFormat, Converter={StaticResource BoolToVisibilityConverter}}">
+                                    <TextBlock Text="{Binding FormatBadge}" FontSize="9" FontWeight="Bold" Foreground="White" />
+                                </Border>
+
                                 <TextBlock Grid.Row="0" Text="{Binding Title}" FontWeight="Bold" FontSize="14"
-                                           TextWrapping="Wrap" VerticalAlignment="Top" />
+                                           TextWrapping="Wrap" VerticalAlignment="Top" Margin="0,16,0,0" />
                                 <TextBlock Grid.Row="1"
                                            Text="{Binding IsCompleted, Converter={StaticResource CompletedToLabelConverter}}"
                                            FontSize="11" FontWeight="Bold" />
@@ -52,8 +94,8 @@
                             </Grid>
                         </Border>
                     </DataTemplate>
-                </ItemsControl.ItemTemplate>
-            </ItemsControl>
+                </ListBox.ItemTemplate>
+            </ListBox>
         </ScrollViewer>
     </DockPanel>
 </Window>

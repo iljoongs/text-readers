@@ -32,8 +32,9 @@ Phase 1(MVP) 완료 이후 순차적으로 진행할 개발 계획. 지금 단�
 - [x] **TTS(음성 읽기) 연동**: Windows 내장 `System.Speech.Synthesis`(SAPI, 오프라인) 사용. 목차/검색과 동일한 "문단 → `GetPageNumber` → 페이지 이동" 패턴을 재사용해 재생 중인 문단이 바뀔 때마다 화면이 자동으로 따라감. 재생/일시정지/재개/정지 지원
 - [x] **폰트 임베딩 확장**: `IFontService`가 내장 5종(`pack://`)과 `data/CustomFonts/`에 사용자가 추가한 폰트(파일 URI, `Fonts.GetFontFamilies`로 family name 자동 인식)를 통합 관리
 - [ ] **클라우드 동기화**: Dropbox 연동을 통한 여러 기기 간 읽은 위치 공유 — Dropbox 개발자 앱 등록 등 사용자 쪽 선행 작업이 필요해 별도 논의 예정
-- [x] **책 콘텐츠 저장 포맷(`.mybook`)**: `BookStorageService`로 본문을 표준 ZIP(`content.txt` + `metadata.json`)에 저장, 파일명은 SHA256 해시 앞 32자 + `.mybook`, `data/Books/index.json`으로 별도 인덱싱(`architecture.md`의 "책 콘텐츠 저장" 참고). 저장/로드 모듈만 구현된 상태이며 `ReaderViewModel`/UI 연결은 아직 범위 밖(추후 논의)
+- [x] **책 콘텐츠 저장 포맷(`.mybook`)**: `BookStorageService`로 본문을 표준 ZIP(`content.txt` + `metadata.json`)에 저장, 파일명은 SHA256 해시 앞 32자 + `.mybook`, `data/Books/index.json`으로 별도 인덱싱(`architecture.md`의 "책 콘텐츠 저장" 참고)
 - [x] **데이터 폴더 위치 변경**: 설정 창에 "데이터 폴더" 섹션 추가, `찾아보기...`로 사용자가 원하는 폴더 지정 / `기본`으로 원래 위치(`AppContext.BaseDirectory\data`)로 복귀. `AppPaths`가 기존 데이터를 새 폴더로 옮기고 앱 재시작 없이 그 위치를 계속 사용(`architecture.md`의 "데이터 폴더 위치 변경" 참고)
+- [x] **mybook을 File 메뉴/라이브러리에 연결**: File 메뉴에 `Open MyBook`/`Save as MyBook`/`Save MyBook As...` 추가. 라이브러리 카드는 한 번 클릭=선택, 더블클릭=열기로 바뀌었고, 오른쪽 클릭 팝업 메뉴로 "mybook으로 저장"(비파괴적, 원본 유지+신규 항목)/"mybook으로 변경"(같은 항목의 경로만 이전, 원본 파일은 유지) 지원. mybook이 아닌 항목은 카드에 형식 배지(TXT/MD/JSON) 표시(`architecture.md`의 "mybook과 File 메뉴/라이브러리 연동" 참고)
 
 ## 우선순위 원칙
 

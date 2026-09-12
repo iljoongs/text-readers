@@ -3,6 +3,7 @@ using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using Microsoft.Win32;
 using TextReaders.Models;
 
 namespace TextReaders.Services;
@@ -18,6 +19,18 @@ public sealed class BookStorageService : IBookStorageService
     private static string IndexFilePath => Path.Combine(BooksDirectory, "index.json");
 
     private static readonly JsonSerializerOptions MetadataOptions = new() { WriteIndented = true };
+
+    public string? ShowOpenFileDialog()
+    {
+        var dialog = new OpenFileDialog
+        {
+            Filter = "MyBook 파일 (*.mybook)|*.mybook",
+            InitialDirectory = BooksDirectory,
+            CheckFileExists = true,
+        };
+
+        return dialog.ShowDialog() == true ? dialog.FileName : null;
+    }
 
     public string SaveBook(string content, string title, string author)
     {
