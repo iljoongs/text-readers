@@ -14,8 +14,8 @@ public sealed class BookStorageService : IBookStorageService
     private const string BookFileExtension = ".mybook";
     private const int HashLength = 32;
 
-    private static readonly string BooksDirectory = Path.Combine(AppContext.BaseDirectory, "data", "Books");
-    private static readonly string IndexFilePath = Path.Combine(BooksDirectory, "index.json");
+    private static string BooksDirectory => Path.Combine(AppPaths.DataDirectory, "Books");
+    private static string IndexFilePath => Path.Combine(BooksDirectory, "index.json");
 
     private static readonly JsonSerializerOptions MetadataOptions = new() { WriteIndented = true };
 

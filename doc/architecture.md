@@ -62,9 +62,16 @@ Encoding encoding = result.Detected?.Encoding ?? Encoding.UTF8;
 ### 데이터 저장: JSON
 
 - `System.Text.Json` 사용 (별도 패키지 불필요, .NET 기본 내장)
-- 저장 위치: 실행 폴더 기준 `./data/*.json`
+- 저장 위치: 기본값은 실행 폴더 기준 `./data/*.json`이지만, 설정 화면에서 다른 폴더로 변경 가능(아래 "데이터 폴더 위치 변경" 참고)
 - 저장 시점: 설정 변경 시, 페이지 이동 시(마지막 읽은 위치), 앱 종료 시
 - **향후 암호화 계획**: `System.Security.Cryptography.Aes`로 JSON 텍스트를 암호화하여 `.dat` 확장자로 저장하는 방식으로 전환 예정 (Phase 4, `doc/roadmap.md` 참고). 지금 단계에서는 평문 JSON으로 충분하며, 저장 구조 설계 시 "직렬화 대상 객체"와 "파일 I/O 로직"을 분리해 두어야 나중에 암호화 레이어만 끼워 넣기 쉽다.
+
+### 데이터 폴더 위치 변경
+
+- `Services/AppPaths.cs` — `SettingsService`/`LibraryService`/`FontService`(`CustomFonts`)/`BookStorageService`(`Books`)가 공통으로 사용하는 데이터 폴더 경로를 계산하는 정적 유틸리티. 각 서비스는 더 이상 `AppContext.BaseDirectory + "data"`를 직접 하드코딩하지 않고 `AppPaths.DataDirectory`를 매번 다시 읽는다(정적 캐싱 없음) → 폴더를 바꾼 뒤 앱 재시작 없이 즉시 반영됨
+- 현재 데이터 폴더 위치를 가리키는 포인터는 데이터 폴더 "밖", 즉 실행 파일 옆의 `data-location.json`에 저장한다(데이터 폴더 안에 포인터를 두면 "포인터를 읽으려면 먼저 폴더 위치를 알아야 하는" 순환 문제가 생기기 때문). 포인터 파일이 없거나 값이 비어 있으면 기본값(`AppContext.BaseDirectory\data`)을 사용
+- `AppPaths.ChangeDataDirectory(newDirectory)`: 기존 데이터 폴더의 모든 내용을 새 폴더로 복사한 뒤 기존 폴더를 삭제하고 포인터를 갱신한다. 새 경로가 기본값이면 포인터 값은 `null`로 저장(=기본값 사용). 새 경로가 현재 폴더 내부의 하위 경로면 예외를 던져 자기 자신 밑으로 이동하는 것을 막는다
+- 설정 화면(`Views/SettingsWindow.xaml`)의 "데이터 폴더" 섹션에서 `찾아보기...`(`Microsoft.Win32.OpenFolderDialog`로 폴더 선택) / `기본`(기본 위치로 복귀) 두 버튼으로 조작. `ReaderViewModel`의 `BrowseDataDirectoryCommand`/`ResetDataDirectoryCommand`가 처리하며, 이동 후 `IFontService.RescanCustomFonts()`를 호출해 새 위치의 사용자 폰트 목록을 다시 읽는다
 
 ### 책 콘텐츠 저장: 표준 ZIP(`.mybook`)
 

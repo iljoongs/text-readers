@@ -5,7 +5,7 @@ namespace TextReaders.Services;
 
 public sealed class SettingsService : ISettingsService
 {
-    private static readonly string FilePath = Path.Combine(AppContext.BaseDirectory, "data", "settings.json");
+    private static string FilePath => Path.Combine(AppPaths.DataDirectory, "settings.json");
 
     public AppSettings Load() => JsonFileStore.Load(FilePath, () => new AppSettings());
 

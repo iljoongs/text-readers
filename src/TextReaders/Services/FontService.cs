@@ -7,7 +7,7 @@ namespace TextReaders.Services;
 
 public sealed class FontService : IFontService
 {
-    private static readonly string CustomFontsDirectory = Path.Combine(AppContext.BaseDirectory, "data", "CustomFonts");
+    private static string CustomFontsDirectory => Path.Combine(AppPaths.DataDirectory, "CustomFonts");
 
     // family name -> 해당 폰트가 들어있는 폴더 URI (pack:// 내장 폰트가 아닌, 사용자가 추가한 폰트만 담는다)
     private readonly Dictionary<string, Uri> _customFontFolders = new();
@@ -44,6 +44,13 @@ public sealed class FontService : IFontService
         }
 
         return AddCustomFont(dialog.FileName);
+    }
+
+    // 데이터 폴더가 다른 위치로 옮겨진 뒤, 새 위치를 기준으로 사용자 폰트 목록을 다시 읽는다.
+    public void RescanCustomFonts()
+    {
+        _customFontFolders.Clear();
+        ScanCustomFonts();
     }
 
     public string AddCustomFont(string sourceFilePath)

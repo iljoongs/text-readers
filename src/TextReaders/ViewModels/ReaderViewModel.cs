@@ -76,6 +76,10 @@ public partial class ReaderViewModel : ObservableObject
 
     public IReadOnlyList<string> AvailableFontFamilyNames => _fontService.GetAvailableFontFamilyNames();
 
+    public string DataDirectoryPath => AppPaths.DataDirectory;
+
+    public bool IsDefaultDataDirectory => AppPaths.IsDefaultDataDirectory;
+
     public IReadOnlyList<MarginPreset> MarginPresetOptions { get; } = Enum.GetValues<MarginPreset>();
 
     public IReadOnlyList<ReadingTheme> ThemeOptions { get; } = Enum.GetValues<ReadingTheme>();
@@ -612,6 +616,37 @@ public partial class ReaderViewModel : ObservableObject
         catch (Exception ex)
         {
             MessageBox.Show($"폰트를 추가하는 중 오류가 발생했습니다.\n{ex.Message}", "text-readers",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    [RelayCommand]
+    private void BrowseDataDirectory()
+    {
+        var chosen = AppPaths.ChooseDataDirectoryFromDialog();
+        if (chosen is not null)
+        {
+            ChangeDataDirectory(chosen);
+        }
+    }
+
+    [RelayCommand]
+    private void ResetDataDirectory() => ChangeDataDirectory(null);
+
+    private void ChangeDataDirectory(string? newDirectory)
+    {
+        try
+        {
+            AppPaths.ChangeDataDirectory(newDirectory);
+            _fontService.RescanCustomFonts();
+
+            OnPropertyChanged(nameof(DataDirectoryPath));
+            OnPropertyChanged(nameof(IsDefaultDataDirectory));
+            OnPropertyChanged(nameof(AvailableFontFamilyNames));
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"데이터 폴더를 변경하는 중 오류가 발생했습니다.\n{ex.Message}", "text-readers",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }

@@ -5,7 +5,7 @@ namespace TextReaders.Services;
 
 public sealed class LibraryService : ILibraryService
 {
-    private static readonly string FilePath = Path.Combine(AppContext.BaseDirectory, "data", "library.json");
+    private static string FilePath => Path.Combine(AppPaths.DataDirectory, "library.json");
 
     public string? GetLastOpenedFilePath()
     {

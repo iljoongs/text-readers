@@ -1,7 +1,7 @@
 <Window x:Class="TextReaders.Views.SettingsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="설정" Width="320" Height="420" ResizeMode="NoResize"
+        Title="설정" Width="320" Height="520" ResizeMode="NoResize"
         WindowStartupLocation="CenterOwner">
     <StackPanel Margin="16">
         <TextBlock Text="글꼴" FontWeight="Bold" Margin="0,0,0,4" />
@@ -29,6 +29,13 @@
         <ComboBox ItemsSource="{Binding ThemeOptions}" SelectedItem="{Binding Theme}" HorizontalAlignment="Left" Width="120" Margin="0,0,0,16" />
 
         <TextBlock Text="밝기" FontWeight="Bold" Margin="0,0,0,4" />
-        <Slider Minimum="0" Maximum="0.7" Value="{Binding DimmingOpacity}" />
+        <Slider Minimum="0" Maximum="0.7" Value="{Binding DimmingOpacity}" Margin="0,0,0,16" />
+
+        <TextBlock Text="데이터 폴더" FontWeight="Bold" Margin="0,0,0,4" />
+        <TextBox Text="{Binding DataDirectoryPath, Mode=OneWay}" IsReadOnly="True" TextWrapping="Wrap" Margin="0,0,0,6" />
+        <DockPanel>
+            <Button DockPanel.Dock="Right" Content="기본" ToolTip="기본 위치로 되돌리기" Command="{Binding ResetDataDirectoryCommand}" Padding="8,2" Margin="6,0,0,0" />
+            <Button Content="찾아보기..." Command="{Binding BrowseDataDirectoryCommand}" Padding="8,2" HorizontalAlignment="Left" />
+        </DockPanel>
     </StackPanel>
 </Window>

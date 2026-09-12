@@ -13,4 +13,7 @@ public interface IFontService
 
     // 이미 경로를 알고 있을 때(다이얼로그 없이) 폰트를 추가한다. 발견된 family name을 반환.
     string AddCustomFont(string sourceFilePath);
+
+    // 데이터 폴더 위치가 바뀐 뒤, 새 위치를 기준으로 사용자 폰트 목록을 다시 읽는다.
+    void RescanCustomFonts();
 }
