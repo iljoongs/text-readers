@@ -150,6 +150,27 @@ public sealed class LibraryService : ILibraryService
         JsonFileStore.Save(FilePath, data);
     }
 
+    // 라이브러리 목록에서만 제거한다(실제 파일은 건드리지 않음).
+    public void RemoveEntry(string filePath)
+    {
+        var data = JsonFileStore.Load(FilePath, () => new LibraryData());
+        data.Entries.RemoveAll(e => e.FilePath == filePath);
+
+        if (data.LastOpenedFilePath == filePath)
+        {
+            data.LastOpenedFilePath = null;
+        }
+
+        JsonFileStore.Save(FilePath, data);
+    }
+
+    public void EnsureEntryExists(string filePath)
+    {
+        var data = JsonFileStore.Load(FilePath, () => new LibraryData());
+        GetOrCreateEntry(data, filePath);
+        JsonFileStore.Save(FilePath, data);
+    }
+
     private static LibraryEntry GetOrCreateEntry(LibraryData data, string filePath)
     {
         var entry = data.Entries.FirstOrDefault(e => e.FilePath == filePath);

@@ -15,4 +15,8 @@ public sealed class AppSettings
     public double DimmingOpacity { get; set; }
 
     public WindowGeometry? Window { get; set; }
+
+    public WindowGeometry? LibraryWindow { get; set; }
+
+    public string? SelectedLibraryEntryPath { get; set; }
 }

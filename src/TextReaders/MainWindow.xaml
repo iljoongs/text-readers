@@ -18,10 +18,6 @@
                         <MenuItem Header="Open" Command="{Binding OpenFileCommand}" InputGestureText="Ctrl+O" />
                         <MenuItem Header="Save" Command="{Binding SaveCommand}" InputGestureText="Ctrl+S" />
                         <MenuItem Header="Save As" Command="{Binding SaveAsCommand}" />
-                        <Separator />
-                        <MenuItem Header="Open MyBook" Command="{Binding OpenMyBookCommand}" />
-                        <MenuItem Header="Save as MyBook" Command="{Binding SaveAsMyBookCommand}" />
-                        <MenuItem Header="Save MyBook As..." Click="SaveMyBookAsMenuItem_Click" />
                     </MenuItem>
                     <MenuItem Header="Text">
                         <MenuItem Header="Edit" Click="EditTextMenuItem_Click" InputGestureText="Ctrl+E" />

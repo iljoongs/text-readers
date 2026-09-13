@@ -354,6 +354,98 @@ public partial class ReaderViewModel : ObservableObject
         }
     }
 
+    // 라이브러리 목록에서만 제거한다 - 실제 파일은 지우지 않는다.
+    [RelayCommand]
+    private void RemoveLibraryEntry(LibraryEntry entry)
+    {
+        _libraryService.RemoveEntry(entry.FilePath);
+        if (SelectedLibraryEntry?.FilePath == entry.FilePath)
+        {
+            SelectedLibraryEntry = null;
+        }
+
+        RefreshLibraryEntries();
+    }
+
+    // 라이브러리 정보(파일명/제목/저자/추가일/해시/크기/경로)를 사람이 읽을 텍스트로 만든다.
+    // mybook이 아니면 그 사실만 안내한다.
+    public string GetMyBookInfoText(LibraryEntry entry)
+    {
+        if (!entry.IsMyBook)
+        {
+            return $"mybook 형식이 아닙니다.\n\n파일: {Path.GetFileName(entry.FilePath)}";
+        }
+
+        var hash = Path.GetFileNameWithoutExtension(entry.FilePath);
+        var indexEntry = _bookStorageService.GetIndex().TryGetValue(hash, out var found) ? found : null;
+        var fileSize = File.Exists(entry.FilePath) ? new FileInfo(entry.FilePath).Length : 0;
+
+        var author = string.IsNullOrWhiteSpace(indexEntry?.Author) ? "(없음)" : indexEntry.Author;
+        var addedAt = indexEntry is not null ? indexEntry.AddedAt.ToString("yyyy-MM-dd HH:mm") : "알 수 없음";
+
+        return string.Join('\n',
+            $"파일명: {Path.GetFileName(entry.FilePath)}",
+            $"제목: {entry.Title}",
+            $"저자: {author}",
+            $"추가된 날짜: {addedAt}",
+            $"해시(SHA256 앞 32자): {hash}",
+            $"파일 크기: {FormatFileSize(fileSize)}",
+            $"경로: {entry.FilePath}");
+    }
+
+    private static string FormatFileSize(long bytes) => bytes switch
+    {
+        < 1024 => $"{bytes} B",
+        < 1024 * 1024 => $"{bytes / 1024.0:0.#} KB",
+        _ => $"{bytes / 1024.0 / 1024.0:0.#} MB",
+    };
+
+    // 드래그 앤 드롭으로 라이브러리에 파일을 추가한다 - 지금 읽고 있는 책은 바꾸지 않고 목록에만 등록한다.
+    // 지원하지 않는 확장자면 false를 반환한다(호출부에서 결과를 모아 안내 메시지를 보여줌).
+    public bool AddFileToLibrary(string filePath)
+    {
+        try
+        {
+            var extension = Path.GetExtension(filePath);
+            if (extension.Equals(".mybook", StringComparison.OrdinalIgnoreCase))
+            {
+                var hash = Path.GetFileNameWithoutExtension(filePath);
+                var title = _bookStorageService.GetIndex().TryGetValue(hash, out var indexEntry) ? indexEntry.Title : hash;
+                _libraryService.SetDisplayTitle(filePath, title);
+            }
+            else if (extension.Equals(".txt", StringComparison.OrdinalIgnoreCase) || extension.Equals(".md", StringComparison.OrdinalIgnoreCase))
+            {
+                var book = _fileService.LoadBook(filePath);
+                _libraryService.SetDisplayTitle(filePath, TitleDetector.DetectTitle(book.Content));
+            }
+            else
+            {
+                return false;
+            }
+
+            _libraryService.EnsureEntryExists(filePath);
+            RefreshLibraryEntries();
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    // 라이브러리 창 자체의 크기/위치와 마지막으로 선택했던 항목을 기억해 다음에 열 때 복구한다.
+    public WindowGeometry? LibraryWindowGeometry => _settingsService.Load().LibraryWindow;
+
+    public string? LastSelectedLibraryEntryPath => _settingsService.Load().SelectedLibraryEntryPath;
+
+    public void SaveLibraryWindowState(WindowGeometry? geometry, string? selectedEntryPath)
+    {
+        var settings = _settingsService.Load();
+        settings.LibraryWindow = geometry;
+        settings.SelectedLibraryEntryPath = selectedEntryPath;
+        _settingsService.Save(settings);
+    }
+
     // mybook/번들이 아닌 라이브러리 항목(txt/md)의 원문을 읽어온다.
     private string ReadEntryContent(LibraryEntry entry)
     {

@@ -85,13 +85,17 @@ Encoding encoding = result.Detected?.Encoding ?? Encoding.UTF8;
 
 ### mybook과 File 메뉴/라이브러리 연동
 
-- **File 메뉴**: `Open MyBook`(`OpenMyBookCommand`, `.mybook` 필터 다이얼로그 → `ReaderViewModel.OpenPath`가 확장자로 분기), `Save as MyBook`(`SaveAsMyBookCommand`, 현재 책 제목으로 즉시 저장), `Save MyBook As...`(코드비하인드에서 `Views/MyBookSaveDialog`로 제목/저자를 물어본 뒤 저장) 세 항목을 `.json` 번들 Open/Save/Save As 아래에 추가했다. `ReaderViewModel.OpenPath`는 `.json`(번들) / `.mybook` / 그 외(txt·md) 세 갈래로 분기한다.
+- **mybook 파일 메뉴 (라이브러리 창)**: `Views/LibraryWindow.xaml` 상단 메뉴 "파일" > `열기`(`OpenMyBookCommand`, `.mybook` 필터 다이얼로그 → `ReaderViewModel.OpenPath`가 확장자로 분기) / `저장`(`SaveAsMyBookCommand`, 현재 책 제목으로 즉시 저장) / `다른 이름으로 저장`(코드비하인드에서 `Views/MyBookSaveDialog`로 제목/저자를 물어본 뒤 저장). 원래 `MainWindow`의 File 메뉴에 있었으나 mybook은 라이브러리 개념에 더 가까워 라이브러리 창으로 옮기고 메인창에서는 제거했다. `ReaderViewModel.OpenPath`는 `.json`(번들) / `.mybook` / 그 외(txt·md) 세 갈래로 분기한다.
 - **저장은 비파괴적**: `SaveCurrentAsMyBook`(File 메뉴)과 `SaveLibraryEntryAsMyBookCommand`(라이브러리 카드 오른쪽 클릭 메뉴 "mybook으로 저장")는 원본 항목을 그대로 두고 새 `.mybook` 파일을 만들어 라이브러리에 **별도 항목**으로 추가한다(북마크/하이라이트/마지막 페이지는 `ILibraryService.ImportEntry`로 그대로 옮겨 심음).
 - **변경은 항목 자체를 이전**: 라이브러리 카드 오른쪽 클릭 메뉴 "mybook으로 변경"(`ConvertLibraryEntryToMyBookCommand`)은 같은 `LibraryEntry` 레코드의 `FilePath`만 새 `.mybook` 파일로 옮긴다(`ILibraryService.RenameEntry` 재사용) — **요구사항에 따라 원본 파일은 삭제하지 않고 그대로 둔 채 라이브러리 항목만 옮겨간다.**
 - **제목 표시**: `.mybook`은 파일명이 해시라 파일명에서 제목을 뽑을 수 없다 - `Models/LibraryEntry.DisplayTitle`(신규 필드)에 실제 제목을 저장해두고 `Title` 프로퍼티가 `DisplayTitle ?? 파일명`으로 계산된다. mybook을 열 때마다(`OpenMyBookPath`) 인덱스에서 제목을 다시 읽어 `DisplayTitle`을 갱신한다.
 - **형식 배지**: `LibraryEntry.IsMyBook`/`IsTextFormat`/`FormatBadge` 계산 프로퍼티로 mybook은 기본 카드 모습 그대로, 그 외 형식(txt/md/json)은 카드 우상단에 확장자 배지(`TXT`/`MD`/`JSON`)를 표시한다(`Views/LibraryWindow.xaml`).
 - **카드 선택/더블클릭**: 라이브러리 창을 `ItemsControl`에서 `ListBox`(`SelectionMode="Single"`)로 바꿔 한 번 클릭은 카드 선택(테두리 강조), 더블클릭(`MouseLeftButtonDown` + `e.ClickCount == 2`)만 책을 연다. 오른쪽 클릭도 그 카드를 선택 상태로 만든 뒤(`PreviewMouseRightButtonDown`) 팝업 메뉴("mybook으로 저장"/"mybook으로 변경")를 띄운다.
 - **mybook 특성으로 인한 기존 기능 보정**: `.mybook`은 파일명이 해시라 (1) `Text > Edit`로 내용을 바꾸면 해시가 바뀌므로 `UpdateContent`(`SaveMyBookContentInPlace`)가 제자리 덮어쓰기 대신 새 해시 파일을 만들고 라이브러리 항목을 그 파일로 옮긴 뒤 **이전 해시 파일은 `IBookStorageService.DeleteBook`으로 삭제**한다(편집할 때마다 옛 버전이 `data/Books/`에 쌓이지 않도록) — 내용이 그대로라 해시가 안 바뀌면 삭제하지 않는다, (2) `Text > Edit Title`은 실제 파일을 rename하는 대신(해시가 제목과 무관하므로) `DisplayTitle`만 갱신한다(`RenameCurrentFile`의 mybook 분기).
+- **삭제 (라이브러리에서만)**: 팝업 메뉴 "삭제"(`RemoveLibraryEntryCommand` → `ILibraryService.RemoveEntry`)는 `library.json`의 항목(북마크/하이라이트/읽은 위치 포함)만 지우고 **실제 파일은 절대 건드리지 않는다**. 코드비하인드에서 확인 메시지박스를 띄운 뒤 "예"를 눌러야 실행된다.
+- **mybook 정보**: 팝업 메뉴 "mybook 정보"(`ReaderViewModel.GetMyBookInfoText`)는 파일명/제목/저자/추가된 날짜/해시/파일 크기/경로를 메시지박스로 보여준다. mybook이 아닌 항목이면 "mybook 형식이 아닙니다"만 안내한다.
+- **드래그 앤 드롭으로 추가**: `Views/LibraryWindow.xaml`은 `AllowDrop="True"`로 창 전체(메뉴/통계 바/카드 목록 어디든)가 드롭 대상이다. `.txt`/`.md`/`.mybook` 파일을 드롭하면 `ReaderViewModel.AddFileToLibrary`가 (제목 인식 포함) 라이브러리에 등록만 하고 **현재 읽고 있는 책은 바꾸지 않는다**(`ILibraryService.EnsureEntryExists`로 항목만 생성, `UpdatePosition`처럼 `LastOpenedFilePath`를 건드리는 메서드는 쓰지 않음 — 그러면 다음 실행 때 "마지막으로 연 파일"이 의도치 않게 바뀌기 때문). 지원하지 않는 확장자는 조용히 건너뛰고 마지막에 결과를 요약해 보여준다.
+- **라이브러리 창 상태 저장/복구**: `Models/AppSettings`에 `LibraryWindow`(크기/위치, `Window`와 동일한 `WindowGeometry` 재사용)와 `SelectedLibraryEntryPath`(마지막으로 선택했던 카드의 경로)를 추가했다. `Views/LibraryWindow.xaml.cs`가 `DataContextChanged`(크기/위치·선택 복구, `MainWindow`와 같은 타이밍) / `Loaded`(선택된 카드가 보이도록 `ListBox.ScrollIntoView`) / `Closing`(`ReaderViewModel.SaveLibraryWindowState`로 저장) 세 시점에서 처리한다.
 
 ### 제목 자동 인식 ("제목: ...")
 

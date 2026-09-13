@@ -31,4 +31,10 @@ public interface ILibraryService
     void RenameEntry(string oldFilePath, string newFilePath);
 
     void SetDisplayTitle(string filePath, string? displayTitle);
+
+    // 라이브러리 목록에서만 제거한다(실제 파일은 건드리지 않음).
+    void RemoveEntry(string filePath);
+
+    // 항목이 없으면 빈 상태로 새로 만든다(열지는 않고 목록에만 등록할 때 사용, 예: 드래그 앤 드롭 추가).
+    void EnsureEntryExists(string filePath);
 }

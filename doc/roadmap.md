@@ -34,8 +34,9 @@ Phase 1(MVP) 완료 이후 순차적으로 진행할 개발 계획. 지금 단�
 - [ ] **클라우드 동기화**: Dropbox 연동을 통한 여러 기기 간 읽은 위치 공유 — Dropbox 개발자 앱 등록 등 사용자 쪽 선행 작업이 필요해 별도 논의 예정
 - [x] **책 콘텐츠 저장 포맷(`.mybook`)**: `BookStorageService`로 본문을 표준 ZIP(`content.txt` + `metadata.json`)에 저장, 파일명은 SHA256 해시 앞 32자 + `.mybook`, `data/Books/index.json`으로 별도 인덱싱(`architecture.md`의 "책 콘텐츠 저장" 참고)
 - [x] **데이터 폴더 위치 변경**: 설정 창에 "데이터 폴더" 섹션 추가, `찾아보기...`로 사용자가 원하는 폴더 지정 / `기본`으로 원래 위치(`AppContext.BaseDirectory\data`)로 복귀. `AppPaths`가 기존 데이터를 새 폴더로 옮기고 앱 재시작 없이 그 위치를 계속 사용(`architecture.md`의 "데이터 폴더 위치 변경" 참고)
-- [x] **mybook을 File 메뉴/라이브러리에 연결**: File 메뉴에 `Open MyBook`/`Save as MyBook`/`Save MyBook As...` 추가. 라이브러리 카드는 한 번 클릭=선택, 더블클릭=열기로 바뀌었고, 오른쪽 클릭 팝업 메뉴로 "mybook으로 저장"(비파괴적, 원본 유지+신규 항목)/"mybook으로 변경"(같은 항목의 경로만 이전, 원본 파일은 유지) 지원. mybook이 아닌 항목은 카드에 형식 배지(TXT/MD/JSON) 표시(`architecture.md`의 "mybook과 File 메뉴/라이브러리 연동" 참고)
+- [x] **mybook을 File 메뉴/라이브러리에 연결**: 라이브러리 카드는 한 번 클릭=선택, 더블클릭=열기로 바뀌었고, 오른쪽 클릭 팝업 메뉴로 "mybook으로 저장"(비파괴적, 원본 유지+신규 항목)/"mybook으로 변경"(같은 항목의 경로만 이전, 원본 파일은 유지) 지원. mybook이 아닌 항목은 카드에 형식 배지(TXT/MD/JSON) 표시(`architecture.md`의 "mybook과 File 메뉴/라이브러리 연동" 참고)
 - [x] **제목 자동 인식**: txt/md/json 번들을 열 때 본문 첫 줄이 `제목: 실제 제목`이면 그걸 진짜 제목으로 인식해 읽는 중 제목과 라이브러리 카드 제목에 반영(`TitleDetector`, `architecture.md`의 "제목 자동 인식" 참고). 부수적으로 BOM 있는 UTF-8 파일에서 "제목:"/"제N장" 같은 첫 줄 패턴 인식이 깨지던 문제도 함께 수정
+- [x] **라이브러리 창 확장**: mybook 파일 메뉴(열기/저장/다른 이름으로 저장)를 메인창에서 라이브러리 창으로 이동, 팝업 메뉴에 "삭제"(라이브러리 항목만 제거, 실제 파일 유지)와 "mybook 정보" 추가, 창 전체에 파일 드래그 앤 드롭으로 라이브러리 추가 지원, 창 크기/위치/마지막 선택 카드를 저장해 다음에 열 때 복구(`architecture.md`의 "mybook과 File 메뉴/라이브러리 연동" 참고)
 
 ## 우선순위 원칙
 
