@@ -28,12 +28,14 @@ public sealed class FileService : IFileService
     {
         var bytes = File.ReadAllBytes(filePath);
         var encoding = _encodingDetectionService.DetectEncoding(bytes);
-        var content = encoding.GetString(bytes);
+        // GetString은 BOM 바이트도 그대로 디코딩해 문자열 맨 앞에 U+FEFF를 남긴다 - 있으면 제거한다.
+        // (그대로 두면 "제목:"/"제N장" 같은 첫 줄 패턴 인식이 깨진다.)
+        var content = encoding.GetString(bytes).TrimStart('﻿');
 
         return new Book
         {
             FilePath = filePath,
-            Title = Path.GetFileNameWithoutExtension(filePath),
+            Title = TitleDetector.DetectTitle(content) ?? Path.GetFileNameWithoutExtension(filePath),
             Content = content,
             IsMarkdown = Path.GetExtension(filePath).Equals(".md", StringComparison.OrdinalIgnoreCase),
         };

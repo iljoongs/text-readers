@@ -200,7 +200,11 @@ public partial class ReaderViewModel : ObservableObject
         }
         else
         {
-            LoadBook(_fileService.LoadBook(filePath));
+            var book = _fileService.LoadBook(filePath);
+            // 파일명이 아니라 본문의 "제목: ..." 줄에서 인식된 제목이면 라이브러리 카드에도 반영한다.
+            // 마커가 없으면 null이 되어 이전에 저장된 표시 제목도 함께 지워져 파일명으로 되돌아간다.
+            _libraryService.SetDisplayTitle(filePath, TitleDetector.DetectTitle(book.Content));
+            LoadBook(book);
         }
     }
 
@@ -374,11 +378,14 @@ public partial class ReaderViewModel : ObservableObject
         Theme = bundle.Theme;
         DimmingOpacity = bundle.DimmingOpacity;
 
+        var detectedTitle = TitleDetector.DetectTitle(bundle.Content);
+        _libraryService.SetDisplayTitle(filePath, detectedTitle);
+
         // LoadBook이 시작하면서 _currentBundlePath를 null로 초기화하므로, 그 뒤에 다시 설정한다.
         LoadBook(new Book
         {
             FilePath = filePath,
-            Title = Path.GetFileNameWithoutExtension(filePath),
+            Title = detectedTitle ?? Path.GetFileNameWithoutExtension(filePath),
             Content = bundle.Content,
             IsMarkdown = bundle.IsMarkdown,
         });

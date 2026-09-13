@@ -93,6 +93,13 @@ Encoding encoding = result.Detected?.Encoding ?? Encoding.UTF8;
 - **카드 선택/더블클릭**: 라이브러리 창을 `ItemsControl`에서 `ListBox`(`SelectionMode="Single"`)로 바꿔 한 번 클릭은 카드 선택(테두리 강조), 더블클릭(`MouseLeftButtonDown` + `e.ClickCount == 2`)만 책을 연다. 오른쪽 클릭도 그 카드를 선택 상태로 만든 뒤(`PreviewMouseRightButtonDown`) 팝업 메뉴("mybook으로 저장"/"mybook으로 변경")를 띄운다.
 - **mybook 특성으로 인한 기존 기능 보정**: `.mybook`은 파일명이 해시라 (1) `Text > Edit`로 내용을 바꾸면 해시가 바뀌므로 `UpdateContent`가 제자리 덮어쓰기 대신 새 해시 파일을 만들고 라이브러리 항목을 그 파일로 옮긴다(이전 해시 파일은 삭제하지 않음), (2) `Text > Edit Title`은 실제 파일을 rename하는 대신(해시가 제목과 무관하므로) `DisplayTitle`만 갱신한다(`RenameCurrentFile`의 mybook 분기).
 
+### 제목 자동 인식 ("제목: ...")
+
+- `Services/TitleDetector.cs` — 본문 **맨 첫 줄**이 `제목: 실제 제목`(전각 콜론 `：`도 허용) 형태면 그 줄의 텍스트를 책의 진짜 제목으로 인식한다. 오탐 방지를 위해 문서 전체가 아니라 첫 줄만 검사한다(본문 중간에 우연히 등장하는 "제목:" 문자열은 무시).
+- txt/md(`Services/FileService.cs`)와 json 번들(`ReaderViewModel.OpenBundle`)을 열 때 적용된다. `.mybook`은 저장 시점에 사용자가 직접 입력한 제목(`title`/`author` 다이얼로그, 인덱스)이 이미 있으므로 이 자동 인식을 적용하지 않는다.
+- 인식된 제목은 `Book.Title`(읽는 동안의 제목)뿐 아니라 `ILibraryService.SetDisplayTitle`로 라이브러리 카드에도 반영된다. **파일을 열 때마다 다시 검사**하므로, "제목:" 줄을 지우고 다시 열면 표시 제목도 파일명으로 되돌아간다 — 반대로 파일명과 다른 제목을 계속 쓰고 싶다면 `Text > Edit`로 본문의 "제목:" 줄 자체를 고쳐야 하고, `Text > Edit Title`(파일명 변경)은 "제목:" 줄이 있는 파일에는 다음에 다시 열 때 덮어써진다.
+- BOM 있는 UTF-8 파일을 열면 디코딩된 문자열 맨 앞에 `U+FEFF`가 남아 `^제목` 같은 첫 줄 패턴 매칭이 깨지던 문제를 함께 고쳤다(`FileService.LoadBook`에서 `TrimStart('﻿')`) — 기존 "제N장" 챕터 인식도 첫 문단이 BOM으로 시작하면 같은 문제가 있었다.
+
 ## 폰트 임베딩 방식
 
 - `Assets/Fonts/` 폴더에 `.ttf`/`.otf` 파일을 프로젝트에 포함
