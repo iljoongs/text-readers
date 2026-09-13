@@ -91,7 +91,7 @@ Encoding encoding = result.Detected?.Encoding ?? Encoding.UTF8;
 - **제목 표시**: `.mybook`은 파일명이 해시라 파일명에서 제목을 뽑을 수 없다 - `Models/LibraryEntry.DisplayTitle`(신규 필드)에 실제 제목을 저장해두고 `Title` 프로퍼티가 `DisplayTitle ?? 파일명`으로 계산된다. mybook을 열 때마다(`OpenMyBookPath`) 인덱스에서 제목을 다시 읽어 `DisplayTitle`을 갱신한다.
 - **형식 배지**: `LibraryEntry.IsMyBook`/`IsTextFormat`/`FormatBadge` 계산 프로퍼티로 mybook은 기본 카드 모습 그대로, 그 외 형식(txt/md/json)은 카드 우상단에 확장자 배지(`TXT`/`MD`/`JSON`)를 표시한다(`Views/LibraryWindow.xaml`).
 - **카드 선택/더블클릭**: 라이브러리 창을 `ItemsControl`에서 `ListBox`(`SelectionMode="Single"`)로 바꿔 한 번 클릭은 카드 선택(테두리 강조), 더블클릭(`MouseLeftButtonDown` + `e.ClickCount == 2`)만 책을 연다. 오른쪽 클릭도 그 카드를 선택 상태로 만든 뒤(`PreviewMouseRightButtonDown`) 팝업 메뉴("mybook으로 저장"/"mybook으로 변경")를 띄운다.
-- **mybook 특성으로 인한 기존 기능 보정**: `.mybook`은 파일명이 해시라 (1) `Text > Edit`로 내용을 바꾸면 해시가 바뀌므로 `UpdateContent`가 제자리 덮어쓰기 대신 새 해시 파일을 만들고 라이브러리 항목을 그 파일로 옮긴다(이전 해시 파일은 삭제하지 않음), (2) `Text > Edit Title`은 실제 파일을 rename하는 대신(해시가 제목과 무관하므로) `DisplayTitle`만 갱신한다(`RenameCurrentFile`의 mybook 분기).
+- **mybook 특성으로 인한 기존 기능 보정**: `.mybook`은 파일명이 해시라 (1) `Text > Edit`로 내용을 바꾸면 해시가 바뀌므로 `UpdateContent`(`SaveMyBookContentInPlace`)가 제자리 덮어쓰기 대신 새 해시 파일을 만들고 라이브러리 항목을 그 파일로 옮긴 뒤 **이전 해시 파일은 `IBookStorageService.DeleteBook`으로 삭제**한다(편집할 때마다 옛 버전이 `data/Books/`에 쌓이지 않도록) — 내용이 그대로라 해시가 안 바뀌면 삭제하지 않는다, (2) `Text > Edit Title`은 실제 파일을 rename하는 대신(해시가 제목과 무관하므로) `DisplayTitle`만 갱신한다(`RenameCurrentFile`의 mybook 분기).
 
 ### 제목 자동 인식 ("제목: ...")
 

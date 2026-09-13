@@ -546,7 +546,7 @@ public partial class ReaderViewModel : ObservableObject
 
     // mybook은 파일명이 내용의 해시라 "제자리 덮어쓰기"가 불가능하다 - 내용이 바뀌면 새 해시 파일이
     // 생기므로, 그 파일로 라이브러리 항목을 옮기고(북마크/하이라이트/위치는 그대로 유지) CurrentBook도
-    // 새 경로를 가리키게 한다. 이전 해시 파일은 지우지 않는다(다른 곳에서 참조 중일 수 있어 안전하게 둠).
+    // 새 경로를 가리키게 한 뒤 이전 해시 파일은 삭제한다(편집할 때마다 옛 버전이 쌓이지 않도록).
     private void SaveMyBookContentInPlace()
     {
         var oldFilePath = CurrentBook!.FilePath;
@@ -559,6 +559,7 @@ public partial class ReaderViewModel : ObservableObject
 
         _libraryService.RenameEntry(oldFilePath, savedPath);
         _libraryService.SetDisplayTitle(savedPath, CurrentBook.Title);
+        _bookStorageService.DeleteBook(oldFilePath);
 
         CurrentBook = new Book
         {
