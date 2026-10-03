@@ -18,6 +18,9 @@
                 <MenuItem Header="저장" Command="{Binding SaveAsMyBookCommand}" />
                 <MenuItem Header="다른 이름으로 저장" Click="SaveMyBookAsMenuItem_Click" />
             </MenuItem>
+            <MenuItem Header="도구">
+                <MenuItem Header="모든 txt를 mybook으로 변환" Command="{Binding ConvertAllTxtToMyBookCommand}" />
+            </MenuItem>
         </Menu>
         <Border DockPanel.Dock="Top" Background="#F0EEEA" Padding="12,8">
             <StackPanel Orientation="Horizontal">
@@ -28,86 +31,88 @@
             </StackPanel>
         </Border>
 
-        <ScrollViewer VerticalScrollBarVisibility="Auto">
-            <!-- 한 번 클릭은 선택만, 더블클릭으로 열기(카드 코드비하인드에서 ClickCount로 구분). -->
-            <ListBox x:Name="EntryListBox" ItemsSource="{Binding LibraryEntries}"
-                     SelectedItem="{Binding SelectedLibraryEntry}"
-                     SelectionMode="Single"
-                     Background="Transparent" BorderThickness="0"
-                     ScrollViewer.HorizontalScrollBarVisibility="Disabled"
-                     Margin="12">
-                <ListBox.ItemsPanel>
-                    <ItemsPanelTemplate>
-                        <WrapPanel Orientation="Horizontal" />
-                    </ItemsPanelTemplate>
-                </ListBox.ItemsPanel>
-                <ListBox.ItemContainerStyle>
-                    <Style TargetType="ListBoxItem">
-                        <Setter Property="Padding" Value="0" />
-                        <Setter Property="Margin" Value="0" />
-                        <Setter Property="Template">
-                            <Setter.Value>
-                                <ControlTemplate TargetType="ListBoxItem">
-                                    <Border x:Name="SelectionBorder" Margin="6" Padding="2" CornerRadius="6"
-                                            BorderThickness="2" BorderBrush="Transparent">
-                                        <ContentPresenter />
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsSelected" Value="True">
-                                            <Setter TargetName="SelectionBorder" Property="BorderBrush" Value="#4A90D9" />
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Setter.Value>
-                        </Setter>
-                    </Style>
-                </ListBox.ItemContainerStyle>
-                <ListBox.ItemTemplate>
-                    <DataTemplate>
-                        <Border Width="140" Height="190" Cursor="Hand"
-                                Background="{Binding Title, Converter={StaticResource BookCardColorConverter}}"
-                                CornerRadius="4"
-                                MouseLeftButtonDown="LibraryEntryCard_MouseLeftButtonDown"
-                                PreviewMouseRightButtonDown="LibraryEntryCard_PreviewMouseRightButtonDown">
-                            <Border.Effect>
-                                <DropShadowEffect BlurRadius="6" ShadowDepth="2" Opacity="0.3" />
-                            </Border.Effect>
-                            <Border.ContextMenu>
-                                <ContextMenu>
-                                    <MenuItem Header="mybook으로 저장" Click="SaveAsMyBookMenuItem_Click" />
-                                    <MenuItem Header="mybook으로 변경" Click="ConvertToMyBookMenuItem_Click" />
-                                    <MenuItem Header="mybook 정보" Click="ShowMyBookInfoMenuItem_Click" />
-                                    <Separator />
-                                    <MenuItem Header="삭제" Click="RemoveLibraryEntryMenuItem_Click" />
-                                </ContextMenu>
-                            </Border.ContextMenu>
-                            <Grid Margin="10">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="*" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                    <RowDefinition Height="Auto" />
-                                </Grid.RowDefinitions>
-
-                                <!-- mybook은 "기본" 형식이라 별도 표시가 없고, txt/md/json처럼 다른 형식만 배지로 구분한다. -->
-                                <Border Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top"
-                                        Background="#B0000000" CornerRadius="3" Padding="4,1"
-                                        Visibility="{Binding IsTextFormat, Converter={StaticResource BoolToVisibilityConverter}}">
-                                    <TextBlock Text="{Binding FormatBadge}" FontSize="9" FontWeight="Bold" Foreground="White" />
+        <!-- 한 번 클릭은 선택만, 더블클릭으로 열기(카드 코드비하인드에서 ClickCount로 구분). -->
+        <!-- ListBox 자체가 내부에 ScrollViewer를 이미 갖고 있어서, 바깥에 ScrollViewer를 또 두면
+             마우스 휠 이벤트를 안쪽 ScrollViewer가 먼저 집어삼켜(스크롤할 내용이 없다고 판단) 휠 스크롤이
+             먹통이 된다 - 바깥 ScrollViewer 없이 ListBox에 직접 스크롤바 속성만 붙인다. -->
+        <ListBox x:Name="EntryListBox" ItemsSource="{Binding LibraryEntries}"
+                 SelectedItem="{Binding SelectedLibraryEntry}"
+                 SelectionMode="Single"
+                 Background="Transparent" BorderThickness="0"
+                 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+                 ScrollViewer.VerticalScrollBarVisibility="Auto"
+                 Margin="12">
+            <ListBox.ItemsPanel>
+                <ItemsPanelTemplate>
+                    <WrapPanel Orientation="Horizontal" />
+                </ItemsPanelTemplate>
+            </ListBox.ItemsPanel>
+            <ListBox.ItemContainerStyle>
+                <Style TargetType="ListBoxItem">
+                    <Setter Property="Padding" Value="0" />
+                    <Setter Property="Margin" Value="0" />
+                    <Setter Property="Template">
+                        <Setter.Value>
+                            <ControlTemplate TargetType="ListBoxItem">
+                                <Border x:Name="SelectionBorder" Margin="6" Padding="2" CornerRadius="6"
+                                        BorderThickness="2" BorderBrush="Transparent">
+                                    <ContentPresenter />
                                 </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsSelected" Value="True">
+                                        <Setter TargetName="SelectionBorder" Property="BorderBrush" Value="#4A90D9" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Setter.Value>
+                    </Setter>
+                </Style>
+            </ListBox.ItemContainerStyle>
+            <ListBox.ItemTemplate>
+                <DataTemplate>
+                    <Border Width="140" Height="190" Cursor="Hand"
+                            Background="{Binding Title, Converter={StaticResource BookCardColorConverter}}"
+                            CornerRadius="4"
+                            MouseLeftButtonDown="LibraryEntryCard_MouseLeftButtonDown"
+                            PreviewMouseRightButtonDown="LibraryEntryCard_PreviewMouseRightButtonDown">
+                        <Border.Effect>
+                            <DropShadowEffect BlurRadius="6" ShadowDepth="2" Opacity="0.3" />
+                        </Border.Effect>
+                        <Border.ContextMenu>
+                            <ContextMenu>
+                                <MenuItem Header="mybook으로 저장" Click="SaveAsMyBookMenuItem_Click" />
+                                <MenuItem Header="mybook으로 변경" Click="ConvertToMyBookMenuItem_Click" />
+                                <MenuItem Header="mybook 정보" Click="ShowMyBookInfoMenuItem_Click" />
+                                <Separator />
+                                <MenuItem Header="삭제" Click="RemoveLibraryEntryMenuItem_Click" />
+                            </ContextMenu>
+                        </Border.ContextMenu>
+                        <Grid Margin="10">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="*" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                                <RowDefinition Height="Auto" />
+                            </Grid.RowDefinitions>
 
-                                <TextBlock Grid.Row="0" Text="{Binding Title}" FontWeight="Bold" FontSize="14"
-                                           TextWrapping="Wrap" VerticalAlignment="Top" Margin="0,16,0,0" />
-                                <TextBlock Grid.Row="1"
-                                           Text="{Binding IsCompleted, Converter={StaticResource CompletedToLabelConverter}}"
-                                           FontSize="11" FontWeight="Bold" />
-                                <TextBlock Grid.Row="2" Text="{Binding LastPageIndex, StringFormat={}{0}페이지 · }" FontSize="11" Opacity="0.75" />
-                                <TextBlock Grid.Row="3" Text="{Binding ReadingTimeDisplay}" FontSize="11" Opacity="0.75" />
-                            </Grid>
-                        </Border>
-                    </DataTemplate>
-                </ListBox.ItemTemplate>
-            </ListBox>
-        </ScrollViewer>
+                            <!-- mybook은 "기본" 형식이라 별도 표시가 없고, txt/md/json처럼 다른 형식만 배지로 구분한다. -->
+                            <Border Grid.Row="0" HorizontalAlignment="Right" VerticalAlignment="Top"
+                                    Background="#B0000000" CornerRadius="3" Padding="4,1"
+                                    Visibility="{Binding IsTextFormat, Converter={StaticResource BoolToVisibilityConverter}}">
+                                <TextBlock Text="{Binding FormatBadge}" FontSize="9" FontWeight="Bold" Foreground="White" />
+                            </Border>
+
+                            <TextBlock Grid.Row="0" Text="{Binding Title}" FontWeight="Bold" FontSize="14"
+                                       TextWrapping="Wrap" VerticalAlignment="Top" Margin="0,16,0,0" />
+                            <TextBlock Grid.Row="1"
+                                       Text="{Binding IsCompleted, Converter={StaticResource CompletedToLabelConverter}}"
+                                       FontSize="11" FontWeight="Bold" />
+                            <TextBlock Grid.Row="2" Text="{Binding LastPageIndex, StringFormat={}{0}페이지 · }" FontSize="11" Opacity="0.75" />
+                            <TextBlock Grid.Row="3" Text="{Binding ReadingTimeDisplay}" FontSize="11" Opacity="0.75" />
+                        </Grid>
+                    </Border>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
     </DockPanel>
 </Window>

@@ -323,24 +323,10 @@ public partial class ReaderViewModel : ObservableObject
     {
         try
         {
-            if (entry.IsMyBook)
+            if (!ConvertEntryToMyBook(entry))
             {
                 MessageBox.Show("이미 mybook 형식입니다.", "text-readers", MessageBoxButton.OK, MessageBoxImage.Information);
                 return;
-            }
-
-            var oldFilePath = entry.FilePath;
-            var content = ReadEntryContent(entry);
-            var savedPath = _bookStorageService.SaveBook(content, entry.Title, string.Empty);
-
-            // 원본 파일은 그대로 두고(요구사항), 같은 라이브러리 항목이 새 mybook 파일을 가리키도록
-            // FilePath만 옮긴다 - 북마크/하이라이트/마지막 페이지는 같은 레코드에 실려 있어 그대로 유지된다.
-            _libraryService.RenameEntry(oldFilePath, savedPath);
-            _libraryService.SetDisplayTitle(savedPath, entry.Title);
-
-            if (CurrentBook?.FilePath == oldFilePath)
-            {
-                OpenMyBookPath(savedPath);
             }
 
             RefreshLibraryEntries();
@@ -352,6 +338,87 @@ public partial class ReaderViewModel : ObservableObject
             MessageBox.Show($"mybook으로 변경하는 중 오류가 발생했습니다.\n{ex.Message}", "text-readers",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
+    }
+
+    // 모든 txt 항목을 한 번에 mybook으로 변환한다("mybook으로 변경"과 같은 동작을 여러 항목에 반복).
+    [RelayCommand]
+    private void ConvertAllTxtToMyBook()
+    {
+        var targets = LibraryEntries
+            .Where(e => Path.GetExtension(e.FilePath).Equals(".txt", StringComparison.OrdinalIgnoreCase))
+            .ToList();
+
+        if (targets.Count == 0)
+        {
+            MessageBox.Show("mybook으로 변환할 txt 파일이 없습니다.", "text-readers", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var confirm = MessageBox.Show(
+            $"txt 파일 {targets.Count}개를 모두 mybook으로 변환합니다. 원본 파일은 그대로 유지됩니다. 계속할까요?",
+            "text-readers", MessageBoxButton.YesNo, MessageBoxImage.Question);
+        if (confirm != MessageBoxResult.Yes)
+        {
+            return;
+        }
+
+        var converted = 0;
+        var failed = 0;
+        foreach (var entry in targets)
+        {
+            try
+            {
+                if (ConvertEntryToMyBook(entry))
+                {
+                    converted++;
+                }
+            }
+            catch
+            {
+                failed++;
+            }
+        }
+
+        RefreshLibraryEntries();
+
+        var summary = failed > 0 ? $"{converted}개 변환 완료, {failed}개 실패" : $"{converted}개 변환 완료";
+        MessageBox.Show(summary, "text-readers", MessageBoxButton.OK,
+            failed > 0 ? MessageBoxImage.Warning : MessageBoxImage.Information);
+    }
+
+    // "mybook으로 변경"의 실제 동작. 이미 mybook이면 false(호출부가 안내 여부를 결정).
+    // 원본 파일은 그대로 두고, 같은 라이브러리 항목이 새 mybook 파일을 가리키도록 FilePath만 옮긴다 -
+    // 북마크/하이라이트/마지막 페이지는 같은 레코드에 실려 있어 그대로 유지된다.
+    private bool ConvertEntryToMyBook(LibraryEntry entry)
+    {
+        if (entry.IsMyBook)
+        {
+            return false;
+        }
+
+        var oldFilePath = entry.FilePath;
+        var content = ReadEntryContent(entry);
+        var savedPath = _bookStorageService.SaveBook(content, entry.Title, string.Empty);
+
+        // mybook은 내용 해시가 파일명이라, 다른 txt와 내용이 완전히 같으면 이미 라이브러리에 있는
+        // mybook과 같은 경로가 나올 수 있다 - 그러면 RenameEntry로 FilePath가 겹치는 두 항목이
+        // 생기지 않도록, 이 항목은 병합 없이 제거한다(내용은 이미 다른 항목으로 추적되고 있음).
+        if (_libraryService.GetAllEntries().Any(e => e.FilePath == savedPath))
+        {
+            _libraryService.RemoveEntry(oldFilePath);
+        }
+        else
+        {
+            _libraryService.RenameEntry(oldFilePath, savedPath);
+            _libraryService.SetDisplayTitle(savedPath, entry.Title);
+        }
+
+        if (CurrentBook?.FilePath == oldFilePath)
+        {
+            OpenMyBookPath(savedPath);
+        }
+
+        return true;
     }
 
     // 라이브러리 목록에서만 제거한다 - 실제 파일은 지우지 않는다.
