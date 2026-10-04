@@ -21,6 +21,7 @@
                     </MenuItem>
                     <MenuItem Header="Text">
                         <MenuItem Header="Edit" Click="EditTextMenuItem_Click" InputGestureText="Ctrl+E" />
+                        <MenuItem Header="Edit in External Editor" Command="{Binding OpenInExternalEditorCommand}" />
                         <MenuItem Header="Edit Title" Click="EditTitleMenuItem_Click" />
                     </MenuItem>
                     <MenuItem Header="Settings" Click="SettingsMenuItem_Click" />

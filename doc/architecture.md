@@ -106,6 +106,12 @@ Encoding encoding = result.Detected?.Encoding ?? Encoding.UTF8;
 - 인식된 제목은 `Book.Title`(읽는 동안의 제목)뿐 아니라 `ILibraryService.SetDisplayTitle`로 라이브러리 카드에도 반영된다. **파일을 열 때마다 다시 검사**하므로, "제목:" 줄을 지우고 다시 열면 표시 제목도 파일명으로 되돌아간다 — 반대로 파일명과 다른 제목을 계속 쓰고 싶다면 `Text > Edit`로 본문의 "제목:" 줄 자체를 고쳐야 하고, `Text > Edit Title`(파일명 변경)은 "제목:" 줄이 있는 파일에는 다음에 다시 열 때 덮어써진다.
 - BOM 있는 UTF-8 파일을 열면 디코딩된 문자열 맨 앞에 `U+FEFF`가 남아 `^제목` 같은 첫 줄 패턴 매칭이 깨지던 문제를 함께 고쳤다(`FileService.LoadBook`에서 `TrimStart('﻿')`) — 기존 "제N장" 챕터 인식도 첫 문단이 BOM으로 시작하면 같은 문제가 있었다.
 
+### 외부 편집기로 편집
+
+- 메뉴 `Text > Edit in External Editor`(`ReaderViewModel.OpenInExternalEditorCommand`)는 현재 책의 원본 `.txt`/`.md` 파일을 `Process.Start`(`UseShellExecute=true`)로 열어 기본 연결 프로그램(보통 메모장)에서 편집하게 한다.
+- `.mybook`(zip)과 `.json`(번들)은 텍스트 파일이 아니므로 외부 편집기 대상이 아니다. 이 경우 안내만 띄우고 기존 `Text > Edit`을 쓰도록 한다.
+- 외부에서 저장한 뒤에는 앱으로 돌아와 `F5`로 다시 불러온다(아래 "외부 변경 다시 불러오기" 참고).
+
 ### 외부 변경 다시 불러오기 (F5)
 
 - `F5`(`MainWindow.Window_PreviewKeyDown` → `ReaderViewModel.ReloadCurrentBookCommand`)는 현재 열린 책을 디스크에서 다시 읽는다. 다른 편집기로 파일이 수정됐을 때 쓴다.

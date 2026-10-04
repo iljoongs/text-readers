@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using System.Windows;
@@ -181,6 +182,37 @@ public partial class ReaderViewModel : ObservableObject
         catch (Exception ex)
         {
             MessageBox.Show($"파일을 여는 중 오류가 발생했습니다.\n{ex.Message}", "text-readers",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
+    // 현재 책의 원본 .txt/.md를 기본 연결 프로그램(보통 메모장)으로 연다. 편집 후에는 F5로 다시 불러온다.
+    // mybook(zip)과 번들(json)은 원본 파일이 텍스트가 아니라 외부 편집기로 직접 편집할 수 없다.
+    [RelayCommand]
+    private void OpenInExternalEditor()
+    {
+        if (CurrentBook is null)
+        {
+            MessageBox.Show("먼저 책을 열어주세요.", "text-readers", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        var extension = Path.GetExtension(CurrentBook.FilePath);
+        if (extension.Equals(".mybook", StringComparison.OrdinalIgnoreCase) ||
+            extension.Equals(".json", StringComparison.OrdinalIgnoreCase))
+        {
+            MessageBox.Show("mybook/번들 파일은 외부 편집기로 직접 편집할 수 없습니다. 앱의 Text > Edit을 사용해주세요.",
+                "text-readers", MessageBoxButton.OK, MessageBoxImage.Information);
+            return;
+        }
+
+        try
+        {
+            Process.Start(new ProcessStartInfo(CurrentBook.FilePath) { UseShellExecute = true });
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"외부 편집기를 여는 중 오류가 발생했습니다.\n{ex.Message}", "text-readers",
                 MessageBoxButton.OK, MessageBoxImage.Error);
         }
     }
