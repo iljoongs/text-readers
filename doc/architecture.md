@@ -109,7 +109,9 @@ Encoding encoding = result.Detected?.Encoding ?? Encoding.UTF8;
 ### 외부 편집기로 편집
 
 - 메뉴 `Text > Edit in External Editor`(`ReaderViewModel.OpenInExternalEditorCommand`)는 현재 책의 원본 `.txt`/`.md` 파일을 `Process.Start`(`UseShellExecute=true`)로 열어 기본 연결 프로그램(보통 메모장)에서 편집하게 한다.
-- `.mybook`(zip)과 `.json`(번들)은 텍스트 파일이 아니므로 외부 편집기 대상이 아니다. 이 경우 안내만 띄우고 기존 `Text > Edit`을 쓰도록 한다.
+- `.mybook`은 zip 안의 `content.txt`를 `%TEMP%\text-readers\edit\<책이름>-<guid>.txt`로 풀어서 연다(`PrepareMyBookForExternalEdit`). 편집 후 앱에서 `F5`를 누르면 `SyncExternalEditIntoMyBook`이 임시 파일 내용을 읽어 `UpdateContent`(앱 안 `Text > Edit`과 같은 저장 경로)로 mybook에 반영한다 — 내용이 바뀌면 새 해시 파일로 옮기고 옛 파일은 삭제된다.
+- 앱 안에서 `Text > Edit`으로 고치면 임시 파일도 같은 내용으로 맞춘다(`SaveMyBookContentInPlace`). 그래서 다음 F5가 옛 임시 내용으로 앱 안의 수정을 덮어쓰지 않는다. 다른 mybook으로 바꾸면 `_externalEditBookPath` 가드로 이전 임시 파일은 적용되지 않는다.
+- `.json`(번들)은 설정까지 담긴 JSON이라 외부 편집 대상이 아니다. 안내만 띄우고 기존 `Text > Edit`을 쓰도록 한다.
 - 외부에서 저장한 뒤에는 앱으로 돌아와 `F5`로 다시 불러온다(아래 "외부 변경 다시 불러오기" 참고).
 
 ### 외부 변경 다시 불러오기 (F5)

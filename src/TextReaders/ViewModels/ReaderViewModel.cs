@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Text;
 using System.Text.RegularExpressions;
 using System.Windows;
 using System.Windows.Documents;
@@ -74,6 +75,11 @@ public partial class ReaderViewModel : ObservableObject
     // Menu > File > 저장이 덮어쓸 대상. 번들(.json)로 열거나 저장한 적이 없으면 null이고,
     // 이 경우 저장은 다른 이름으로 저장과 동일하게 동작한다.
     private string? _currentBundlePath;
+
+    // mybook을 외부 편집기로 열 때 내용을 풀어 놓는 임시 txt와, 그 임시 파일이 어느 mybook의 것인지.
+    private string? _externalEditTempPath;
+    private string? _externalEditBookPath;
+    private static readonly string ExternalEditDirectory = Path.Combine(Path.GetTempPath(), "text-readers", "edit");
 
     public event Action<int>? NavigateToPageRequested;
 
@@ -186,8 +192,9 @@ public partial class ReaderViewModel : ObservableObject
         }
     }
 
-    // 현재 책의 원본 .txt/.md를 기본 연결 프로그램(보통 메모장)으로 연다. 편집 후에는 F5로 다시 불러온다.
-    // mybook(zip)과 번들(json)은 원본 파일이 텍스트가 아니라 외부 편집기로 직접 편집할 수 없다.
+    // 현재 책을 기본 연결 프로그램(보통 메모장)으로 연다. txt/md는 원본 파일을 바로 열고,
+    // mybook은 안의 content 내용을 임시 txt로 풀어서 연다 - 편집 후 F5를 누르면 mybook에 반영된다.
+    // 번들(json)은 설정까지 담긴 JSON이라 외부 편집 대상이 아니다.
     [RelayCommand]
     private void OpenInExternalEditor()
     {
@@ -198,17 +205,23 @@ public partial class ReaderViewModel : ObservableObject
         }
 
         var extension = Path.GetExtension(CurrentBook.FilePath);
-        if (extension.Equals(".mybook", StringComparison.OrdinalIgnoreCase) ||
-            extension.Equals(".json", StringComparison.OrdinalIgnoreCase))
+        if (extension.Equals(".json", StringComparison.OrdinalIgnoreCase))
         {
-            MessageBox.Show("mybook/번들 파일은 외부 편집기로 직접 편집할 수 없습니다. 앱의 Text > Edit을 사용해주세요.",
+            MessageBox.Show("번들(json) 파일은 외부 편집기로 편집할 수 없습니다. 앱의 Text > Edit을 사용해주세요.",
                 "text-readers", MessageBoxButton.OK, MessageBoxImage.Information);
             return;
         }
 
         try
         {
-            Process.Start(new ProcessStartInfo(CurrentBook.FilePath) { UseShellExecute = true });
+            var filePath = IsMyBookPath(CurrentBook.FilePath) ? PrepareMyBookForExternalEdit() : CurrentBook.FilePath;
+            Process.Start(new ProcessStartInfo(filePath) { UseShellExecute = true });
+
+            if (IsMyBookPath(CurrentBook.FilePath))
+            {
+                MessageBox.Show("내용을 임시 txt 파일로 열었습니다. 편집 후 저장하고 앱에서 F5를 누르면 mybook에 반영됩니다.",
+                    "text-readers", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
         }
         catch (Exception ex)
         {
@@ -217,7 +230,34 @@ public partial class ReaderViewModel : ObservableObject
         }
     }
 
+    private string PrepareMyBookForExternalEdit()
+    {
+        Directory.CreateDirectory(ExternalEditDirectory);
+        _externalEditTempPath = Path.Combine(ExternalEditDirectory,
+            $"{Path.GetFileNameWithoutExtension(CurrentBook!.FilePath)}-{Guid.NewGuid():N}.txt");
+        _externalEditBookPath = CurrentBook.FilePath;
+        File.WriteAllText(_externalEditTempPath, CurrentBook.Content, new UTF8Encoding(false));
+        return _externalEditTempPath;
+    }
+
+    // 외부 편집기에서 고친 임시 파일 내용을 현재 mybook에 반영한다(앱 안 Text > Edit과 같은 저장 경로).
+    private void SyncExternalEditIntoMyBook()
+    {
+        if (_externalEditTempPath is null || CurrentBook is null || !IsMyBookPath(CurrentBook.FilePath) ||
+            CurrentBook.FilePath != _externalEditBookPath || !File.Exists(_externalEditTempPath))
+        {
+            return;
+        }
+
+        var edited = File.ReadAllText(_externalEditTempPath);
+        if (edited != CurrentBook.Content)
+        {
+            UpdateContent(edited);
+        }
+    }
+
     // 외부에서 파일이 수정됐을 때(F5) 디스크에서 다시 읽는다. 읽던 페이지는 유지한다.
+    // 외부 편집기로 mybook을 편집했다면 먼저 그 내용을 mybook에 반영한 뒤 다시 읽는다.
     [RelayCommand]
     private void ReloadCurrentBook()
     {
@@ -228,6 +268,7 @@ public partial class ReaderViewModel : ObservableObject
 
         try
         {
+            SyncExternalEditIntoMyBook();
             _libraryService.UpdatePosition(CurrentBook.FilePath, CurrentPageNumber);
             OpenPath(CurrentBook.FilePath);
         }
@@ -764,6 +805,12 @@ public partial class ReaderViewModel : ObservableObject
         var oldFilePath = CurrentBook!.FilePath;
         var savedPath = _bookStorageService.SaveBook(CurrentBook.Content, CurrentBook.Title, string.Empty);
 
+        // 앱 안에서 고친 내용이 외부 편집용 임시 파일보다 최신이므로, 다음 F5에서 옛 임시 내용으로 덮어쓰지 않게 맞춘다.
+        if (_externalEditTempPath is not null)
+        {
+            File.WriteAllText(_externalEditTempPath, CurrentBook.Content, new UTF8Encoding(false));
+        }
+
         if (string.Equals(savedPath, oldFilePath, StringComparison.OrdinalIgnoreCase))
         {
             return;
@@ -772,6 +819,7 @@ public partial class ReaderViewModel : ObservableObject
         _libraryService.RenameEntry(oldFilePath, savedPath);
         _libraryService.SetDisplayTitle(savedPath, CurrentBook.Title);
         _bookStorageService.DeleteBook(oldFilePath);
+        _externalEditBookPath = savedPath;
 
         CurrentBook = new Book
         {
