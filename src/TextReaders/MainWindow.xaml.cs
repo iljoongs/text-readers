@@ -113,6 +113,13 @@ public partial class MainWindow : Window
                 GoToAdjacentPage(forward: true);
                 e.Handled = true;
                 break;
+            case Key.F5:
+                if (DataContext is ReaderViewModel reloadTarget)
+                {
+                    reloadTarget.ReloadCurrentBookCommand.Execute(null);
+                }
+                e.Handled = true;
+                break;
         }
     }
 

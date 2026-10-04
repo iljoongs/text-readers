@@ -185,6 +185,27 @@ public partial class ReaderViewModel : ObservableObject
         }
     }
 
+    // 외부에서 파일이 수정됐을 때(F5) 디스크에서 다시 읽는다. 읽던 페이지는 유지한다.
+    [RelayCommand]
+    private void ReloadCurrentBook()
+    {
+        if (CurrentBook is null)
+        {
+            return;
+        }
+
+        try
+        {
+            _libraryService.UpdatePosition(CurrentBook.FilePath, CurrentPageNumber);
+            OpenPath(CurrentBook.FilePath);
+        }
+        catch (Exception ex)
+        {
+            MessageBox.Show($"파일을 다시 불러오는 중 오류가 발생했습니다.\n{ex.Message}", "text-readers",
+                MessageBoxButton.OK, MessageBoxImage.Error);
+        }
+    }
+
     // 확장자가 .json이면 번들, .mybook이면 표준 ZIP 책 파일, 그 외에는 일반 txt/md로 취급한다.
     // OpenFile/라이브러리 항목 열기/마지막 세션 복원 세 경로가 모두 이 메서드를 거친다.
     public void OpenPath(string filePath)

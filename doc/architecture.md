@@ -106,6 +106,12 @@ Encoding encoding = result.Detected?.Encoding ?? Encoding.UTF8;
 - 인식된 제목은 `Book.Title`(읽는 동안의 제목)뿐 아니라 `ILibraryService.SetDisplayTitle`로 라이브러리 카드에도 반영된다. **파일을 열 때마다 다시 검사**하므로, "제목:" 줄을 지우고 다시 열면 표시 제목도 파일명으로 되돌아간다 — 반대로 파일명과 다른 제목을 계속 쓰고 싶다면 `Text > Edit`로 본문의 "제목:" 줄 자체를 고쳐야 하고, `Text > Edit Title`(파일명 변경)은 "제목:" 줄이 있는 파일에는 다음에 다시 열 때 덮어써진다.
 - BOM 있는 UTF-8 파일을 열면 디코딩된 문자열 맨 앞에 `U+FEFF`가 남아 `^제목` 같은 첫 줄 패턴 매칭이 깨지던 문제를 함께 고쳤다(`FileService.LoadBook`에서 `TrimStart('﻿')`) — 기존 "제N장" 챕터 인식도 첫 문단이 BOM으로 시작하면 같은 문제가 있었다.
 
+### 외부 변경 다시 불러오기 (F5)
+
+- `F5`(`MainWindow.Window_PreviewKeyDown` → `ReaderViewModel.ReloadCurrentBookCommand`)는 현재 열린 책을 디스크에서 다시 읽는다. 다른 편집기로 파일이 수정됐을 때 쓴다.
+- 다시 읽기 전에 현재 페이지를 `UpdatePosition`으로 저장해두고 `OpenPath`를 다시 타므로, 읽던 위치는 유지되고 제목 인식(`TitleDetector`)도 새 내용에 맞춰 갱신된다.
+- 앱 안에서 편집한 내용은 `Text > Edit` 시점에 이미 파일에 저장되므로 다시 읽어도 잃는 내용이 없다.
+
 ## 폰트 임베딩 방식
 
 - `Assets/Fonts/` 폴더에 `.ttf`/`.otf` 파일을 프로젝트에 포함
